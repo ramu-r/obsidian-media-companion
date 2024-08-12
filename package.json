@@ -1,5 +1,5 @@
 {
-	"name": "obsidian-sample-plugin",
+	"name": "obsidian-media-gallery",
 	"version": "1.0.0",
 	"description": "This is a sample plugin for Obsidian (https://obsidian.md)",
 	"main": "main.js",
@@ -19,6 +19,7 @@
 		"builtin-modules": "3.3.0",
 		"esbuild": "0.17.3",
 		"esbuild-svelte": "^0.8.0",
+		"madge": "^8.0.0",
 		"obsidian": "latest",
 		"svelte": "^4.2.15",
 		"svelte-preprocess": "^5.1.4",

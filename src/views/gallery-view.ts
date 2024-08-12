@@ -1,33 +1,34 @@
 import { ItemView, WorkspaceLeaf } from "obsidian";
-
 import Gallery from "./../components/Gallery.svelte";
-import { MediaUtil } from "src/util/media";
+import type MediaCompanion from "main";
 
 export const VIEW_TYPE_GALLERY = "gallery-view";
 
 export class GalleryView extends ItemView {
   component!: Gallery;
+  plugin: MediaCompanion;
 
-  constructor(leaf: WorkspaceLeaf) {
+  public constructor(leaf: WorkspaceLeaf, plugin: MediaCompanion) {
     super(leaf);
+    this.plugin = plugin;
   }
 
-  getViewType() {
+  public getViewType() {
     return VIEW_TYPE_GALLERY;
   }
 
-  getDisplayText() {
+  public getDisplayText() {
     return "Gallery view";
   }
 
-  async onOpen() {
+  public async onOpen() {
     this.component = new Gallery({
       target: this.contentEl,
-      props: {}
+      props: { }
     });
   }
 
-  async onClose() {
+  public async onClose() {
     this.component.$destroy();
   }
 }

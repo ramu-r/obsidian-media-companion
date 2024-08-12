@@ -1,44 +1,32 @@
-import { App, Editor, MarkdownView, Modal, Notice, Plugin, PluginSettingTab, Setting, WorkspaceLeaf } from 'obsidian';
+import { App, Plugin, PluginSettingTab, Setting, Workspace } from 'obsidian';
 import { GalleryView, VIEW_TYPE_GALLERY } from 'src/views/gallery-view';
 import { DEFAULT_SETTINGS } from 'src/settings'
-import { extractColors } from "extract-colors";
 
 import type { MediaCompanionSettings } from 'src/settings';
-import { SidecarUtil } from 'src/util/sidecar';
-import { MediaUtil } from 'src/util/media';
-
-    // Some issues: When we reach the last images, it breaks due to reading prop of undefined
-    // Which can be solved by adding a .length check when we use cache -> Or, we just create a
-	// query class, which yield returns things 😌
-
-    // When we switch between tabs it breaks a little bit, because of the window resize.
-    // We should fix this by checking the positions, maybe? -> Can't think of a fix yet, fine
-	// for now. Going to look into making my own masonry implementation instead.
-
-    // Other todo items:
-    // - Cache
-    // - Caching info
-    // - Semantic file drags!!!!
-    // - Adding search stuff
-    // - Adding image info to sidecar files
-    // - Creating sidecar files on new file created
-    // - Moving sidecar files with files
-    // - Deleting sidecar files with files
-    
-    // From there, work can be done on:
-    // - Supporting videos, gifs
-    // - Supporting audio
-    // - Supporting object files, 3d stuff -> Different plugin?
+import Cache from 'src/cache';
+import MutationHandler from 'src/mutationHandler';
+import pluginStore from 'src/stores/pluginStore';
+import appStore from 'src/stores/appStore';
 
 export default class MediaCompanion extends Plugin {
 	settings!: MediaCompanionSettings;
+	cache!: Cache;
+	mutationHandler!: MutationHandler;
 
 	async onload() {
-		await SidecarUtil.initialize(this.app, this);
-		await MediaUtil.initialize(this.app, this);
+		pluginStore.plugin.set(this);
+		appStore.app.set(this.app);
 
 		await this.loadSettings();
 		await this.registerViews();
+		
+		this.cache = new Cache(this.app, this);
+
+		this.app.workspace.onLayoutReady(() => {
+			this.mutationHandler = new MutationHandler(this.app, this, this.cache);
+			
+			this.cache.initialize().then(() => {});
+		});
 
 		this.addRibbonIcon('image', 'Open Gallery', (_: MouseEvent) => {
 			this.createGallery();
@@ -47,15 +35,20 @@ export default class MediaCompanion extends Plugin {
 		await this.registerCommands();
 
 		this.addSettingTab(new MediaCompanionSettingTab(this.app, this));
-
-		// TODO: Remove this and create as needed instead
-		SidecarUtil.registerRequiredSidecarFiles();
 	}
 
 	async onunload() {}
 
 	async registerViews() {
-		this.registerView(VIEW_TYPE_GALLERY, (leaf) => new GalleryView(leaf));
+		this.registerView(VIEW_TYPE_GALLERY, (leaf) => new GalleryView(leaf, this));
+	}
+
+	async createGallery() {
+		const { workspace } = this.app;
+
+		let leaf = workspace.getLeaf(true);
+		await leaf?.setViewState({type: VIEW_TYPE_GALLERY, active: true });
+		workspace.revealLeaf(leaf);
 	}
 
 	async registerCommands() {
@@ -66,42 +59,6 @@ export default class MediaCompanion extends Plugin {
 				console.log("A");
 			},
 		});
-
-		this.addCommand({
-			id: 'test-command',
-			name: 'Test Thing',
-			callback: () => {
-				MediaUtil.getFiles().then((f) => {
-					const img = new Image();
-					img.src = this.app.vault.getResourcePath(f[0]);
-					img.decode().then((e) => {
-						console.log([img.naturalHeight, img.naturalWidth]);
-					});
-					
-				})},
-		});
-
-		this.addCommand({
-			id: 'delete-sidecar-command',
-			name: 'Delete Sidecars',
-			callback: () => {
-				console.log("Starting deletion...");
-				SidecarUtil.sidecarFiles().then((files) => {
-					for (const file of files) {
-						this.app.vault.delete(file);
-					}
-				});
-				console.log("Finished deleting sidecars");
-			},
-		});
-	}
-
-	async createGallery() {
-		const { workspace } = this.app;
-
-		let leaf = workspace.getLeaf(true);
-		await leaf?.setViewState({type: VIEW_TYPE_GALLERY, active: true });
-		workspace.revealLeaf(leaf);
 	}
 
 	async loadSettings() {
