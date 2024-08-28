@@ -36,7 +36,7 @@ export default class MutationHandler {
 
         this.cache.getFile(path).then(f => {
             if (f) {
-                f.update(this.app, this.app.vault.getFileByPath(path)!).then(() => {});
+                f.update().then(() => {});
             }
         });
     }
@@ -119,22 +119,18 @@ export default class MutationHandler {
      */
     public onFileCreated(file: TAbstractFile): void {
         if (!(file instanceof TFile) || !this.plugin.settings.extensions.contains(file.extension)) return;
-        
-        // Check the filetype
-        // This is really ugly: Rewrite
-        getMediaType(file.extension).then(t => {
-            switch (t) {
-                case MediaTypes.Image:
-                    MCImage.create(file, this.app).then(mediaFile => {
-                        this.cache.addFile(mediaFile).then(() => {});
-                    });
-                    break;
-                case MediaTypes.Unknown:
-                    MediaFile.create(file, this.app).then(mediaFile => {
-                        this.cache.addFile(mediaFile).then(() => {});
-                    });
-                    break;
-            }
-        });
+
+        switch (getMediaType(file.extension)) {
+            case MediaTypes.Image:
+                MCImage.create(file, this.app).then(mediaFile => {
+                    this.cache.addFile(mediaFile).then(() => {});
+                });
+                break;
+            case MediaTypes.Unknown:
+                MediaFile.create(file, this.app).then(mediaFile => {
+                    this.cache.addFile(mediaFile).then(() => {});
+                });
+                break;
+        }
     }
 }

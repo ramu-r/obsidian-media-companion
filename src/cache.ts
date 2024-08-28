@@ -46,7 +46,7 @@ export default class Cache {
         await Promise.all(files.map(async (file) => {
             let mediaFile;
 
-            switch (await getMediaType(file.extension)) {
+            switch (getMediaType(file.extension)) {
                 case MediaTypes.Image:
                     mediaFile = await MCImage.create(file, this.app);
                     break;
@@ -81,7 +81,7 @@ export default class Cache {
     public async removeFile(file: string): Promise<boolean> {
         let length = this.files.length;
         
-        this.files = this.files.filter(f => f.path !== file);
+        this.files = this.files.filter(f => f.file.path !== file);
 
         return this.files.length < length;
     }
@@ -92,7 +92,7 @@ export default class Cache {
      * @returns The file if it exists in the cache, otherwise undefined
      */
     public async getFile(path: string): Promise<MediaFile | undefined> {
-        return this.files.find(f => f.path === path);
+        return this.files.find(f => f.file.path === path);
     }
 
     /**

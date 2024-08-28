@@ -1,19 +1,12 @@
-import type { App, CachedMetadata, TFile } from "obsidian";
-import { reservedFrontMatterTags } from "./frontmatter";
+import type { App, TFile } from "obsidian";
 
 /** 
  * Represents a sidecar file for a media file
  */
 export default class Sidecar {
-    // Sidecar path
-    public path!: string;
-    // Last modified timestamp
-    public modified!: number;
-
-    // Tags in file and frontmatter
-    public tags!: string[];
-    // Additional frontmatter, excluding reserved tags
-    public frontMatter!: { [key: string]: any };
+    public mediaFile!: TFile;
+    public file!: TFile;
+    protected app!: App;
 
     private constructor() { }
 
@@ -23,10 +16,12 @@ export default class Sidecar {
      * @param app The app instance
      * @returns The created sidecar
      */
-    public static async create(mediaFilePath: string, app: App): Promise<Sidecar> {
+    public static async create(mediaFile: TFile, app: App): Promise<Sidecar> {
         let file = new Sidecar();
+        file.mediaFile = mediaFile;
+        file.app = app;
 
-        await file.fill(mediaFilePath, app);
+        await file.fill();
 
         return file;
     }
@@ -36,13 +31,8 @@ export default class Sidecar {
      * @param file The media file to use for filling
      * @param app The app instance
      */
-    protected async fill(mediaFilePath: string, app: App) {
-        this.path = `${mediaFilePath}.md`;
-
-        let file = await this.createIfNotExists(app);
-
-        this.modified = file.stat.mtime;
-        await this.processFrontMatter(app);
+    protected async fill() {
+        this.file = await this.createIfNotExists();
     }
 
     /**
@@ -50,44 +40,11 @@ export default class Sidecar {
      * @param app The app instance
      * @returns The already existing or newly created sidecar file
      */
-    private async createIfNotExists(app: App): Promise<TFile> {
-        let file = app.vault.getFileByPath(this.path);
-
-        if (!file) {
-            file = await app.vault.create(this.path, "");
-        }
+    private async createIfNotExists(): Promise<TFile> {
+        let file = this.app.vault.getFileByPath(`${this.mediaFile.path}.md`) ?? 
+            await this.app.vault.create(`${this.mediaFile.path}.md`, "");
 
         return file;
-    }
-
-    /**
-     * Process the frontmatter of the file
-     * @param app The app instance
-     */
-    private async processFrontMatter(app: App): Promise<void> {
-        const file = await this.createIfNotExists(app);
-        const cache = app.metadataCache.getFileCache(file);
-
-        if (!cache) {
-            this.frontMatter = {};
-            this.tags = [];
-            return;
-        }
-
-        // We _must_ clone here: Otherwise it's a reference, and we actually
-        // delete the tags from the cache in the following steps
-        if (cache.frontmatter) {
-            this.frontMatter = structuredClone(cache.frontmatter);
-        } else {
-            this.frontMatter = {};
-        }
-        
-        for (let tag of reservedFrontMatterTags) {
-            if (this.frontMatter[tag]) delete this.frontMatter[tag];
-        }
-        if (this.frontMatter["tags"]) delete this.frontMatter["tags"];
-
-        this.tags = await this.processTags(cache);
     }
 
     /**
@@ -96,7 +53,11 @@ export default class Sidecar {
      * @param cache The metadata cache of the file
      * @returns The tags, without hashtags and duplicates
      */
-    private async processTags(cache: CachedMetadata): Promise<string[]> {
+    public getTags(): string[] {
+        let cache = this.app.metadataCache.getFileCache(this.file);
+        
+        if (!cache) return [];
+
         let tags = cache.tags?.map(t => t.tag) ?? [];
 
         const fmTags = cache.frontmatter?.tags ?? [];
@@ -122,11 +83,8 @@ export default class Sidecar {
      * @param app The app instance
      * @returns The data in the tag, or undefined if it does not exist
      */
-    public async getTag(tag: string, app: App): Promise<any | undefined> {
-        const file = app.vault.getFileByPath(this.path);
-        if (!file) return undefined;
-        
-        const cache = app.metadataCache.getFileCache(file)?.frontmatter;
+    public getFrontmatterTag(tag: string): any | undefined {
+        const cache = this.app.metadataCache.getFileCache(this.file)?.frontmatter;
         if (!cache) return undefined;
         
         return cache[tag];
@@ -138,16 +96,15 @@ export default class Sidecar {
      * @param value The value to set
      * @param app The app instance
      */
-    public async setTag(tag: string, value: any, app: App): Promise<void> {
-        this.frontMatter[tag] = value;
-
-        // But also write the frontMatter to the file...
-        let file = app.vault.getFileByPath(this.path);
- 
-        if (!file) return;
-
+    public async setFrontmatterTag(tag: string, value: any, 
+        type: "text" | "multitext" | "number" | "checkbox" | "date" | "datetime" | "aliases" | "tags" | undefined = undefined): Promise<void> {
         try {
-            await app.fileManager.processFrontMatter(file, (fm) => fm[tag] = value);
+            await this.app.fileManager.processFrontMatter(this.file, (fm) => fm[tag] = value);
+            
+            if (type) {
+                // @ts-ignore
+                this.app.metadataTypeManager.properties[tag.toLowerCase()].type = type;
+            }
         } catch (e) {
             console.log(e);
         }

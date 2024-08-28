@@ -13,7 +13,7 @@ export enum MediaTypes {
  * @param extention The extension of the file
  * @returns The media type of the file
  */
-export async function getMediaType(extention: string): Promise<MediaTypes> {
+export function getMediaType(extention: string): MediaTypes {
     switch (extention) {
     case "png":
     case "jpg":

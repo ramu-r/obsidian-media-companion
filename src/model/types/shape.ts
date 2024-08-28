@@ -14,7 +14,7 @@ export enum Shape {
  * @param height The height of the object
  * @returns The shape of the object
  */
-export async function getShape(width: number, height: number): Promise<Shape> {
+export function getShape(width: number, height: number): Shape {
     if (width === height) {
         return Shape.Square;
     } else if (width > height) {

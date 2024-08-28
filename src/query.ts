@@ -1,6 +1,6 @@
 import type { App, HexString } from "obsidian";
 import Cache from "./cache";
-import type { Shape } from "./model/types/shape";
+import { getShape, type Shape } from "./model/types/shape";
 import type MediaFile from "./model/mediaFile";
 import { MediaTypes } from "./model/types/mediaTypes";
 import type MCImage from "./model/types/image/image";
@@ -79,13 +79,13 @@ export default class Query {
 
         switch (this.query.orderBy.option) {
             case OrderByOptions.creationDate:
-                this.files.sort((a, b) => a.created - b.created);
+                this.files.sort((a, b) => a.file.stat.ctime - b.file.stat.ctime);
                 break;
             case OrderByOptions.modifiedDate:
-                this.files.sort((a, b) => a.modified - b.created);
+                this.files.sort((a, b) => a.file.stat.mtime - b.file.stat.mtime);
                 break;
             case OrderByOptions.name:
-                this.files.sort((a, b) => a.name.localeCompare(b.name));
+                this.files.sort((a, b) => a.file.name.localeCompare(b.file.name));
                 break;
             case OrderByOptions.random:
             default:
@@ -108,24 +108,26 @@ export default class Query {
             let item = this.files[this.currentIndex];
 
             if (mediaTypes.length > 0) {
-                if (!mediaTypes.includes(item.type)) continue;
+                if (!mediaTypes.includes(item.getType())) continue;
             }
 
             if (this.query.fileTypes.length > 0) {
-                if (!this.query.fileTypes.contains(item.extension)) continue;
+                if (!this.query.fileTypes.contains(item.file.extension)) continue;
             }
 
             if (mediaTypes.contains(MediaTypes.Image))
             {
                 let image = item as MCImage;
+                let size = image.getCachedSize();
 
                 if (this.query.dimensions) {
-                    if (image.size.width < this.query.dimensions.mindWidth || image.size.width > this.query.dimensions.maxWidth ||
-                        image.size.height < this.query.dimensions.minHeight || image.size.height > this.query.dimensions.maxHeight) continue;
+                    if (!(size) ||
+                        size.width < this.query.dimensions.mindWidth || size.width > this.query.dimensions.maxWidth ||
+                        size.height < this.query.dimensions.minHeight || size.height > this.query.dimensions.maxHeight) continue;
                 }
 
                 if (this.query.shape.length > 0) {
-                    if (!this.query.shape.contains(image.shape)) continue;
+                    if (!(size) || !this.query.shape.contains(getShape(size.width, size.height))) continue;
                 }
 
                 if (this.query.color) {
@@ -139,7 +141,7 @@ export default class Query {
                 let hit = false;
 
                 for (let folder of this.query.folders) {
-                    if (item.path.startsWith(folder)) {
+                    if (item.file.path.startsWith(folder)) {
                         hit = true;
                         break;
                     }
@@ -153,7 +155,7 @@ export default class Query {
                 let hit = false;
 
                 for (let tag of this.query.tags) {
-                    if (item.sidecar.tags.contains(tag)) {
+                    if (item.sidecar.getTags().contains(tag)) {
                         hit = true;
                         break;
                     }
@@ -167,7 +169,7 @@ export default class Query {
                 let hit = false;
 
                 for (let fm of this.query.hasFrontMatter) {
-                    if (item.sidecar.frontMatter[fm]) {
+                    if (item.sidecar.getFrontmatterTag(fm)) {
                         hit = true;
                         break;
                     }
@@ -182,8 +184,8 @@ export default class Query {
             }
             found.push({
                 groupKey: this.group,
-                resourcePath: this.app.vault.getResourcePath(this.app.vault.getFileByPath(item.path)!),
-                name: item.name,
+                resourcePath: this.app.vault.getResourcePath(this.app.vault.getFileByPath(item.file.path)!),
+                name: item.file.name,
             });
             this.totalFound++;
         }

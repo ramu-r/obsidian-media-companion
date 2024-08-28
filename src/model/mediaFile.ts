@@ -3,23 +3,12 @@ import Sidecar from "./sidecar";
 import { getMediaType, type MediaTypes } from "./types/mediaTypes";
 
 export default class MediaFile {
-    // The filename
-    public name!: string;
-    // The file extension
-    public extension!: string;
-    // The path to the file
-    public path!: string;
-    // The filetype
-    // Might not be needed: Maybe remove, since we can do it as classes
-    public type!: MediaTypes;
-
-    // The relevant sidecar file
     public sidecar!: Sidecar;
-    // The last modified timestamp
-    public modified!: number;
-    // The created timestamp
-    public created!: number;
+    public file!: TFile;
+    protected app!: App;
 
+    protected static last_updated_tag = "MediaCompanion Last Updated";
+    
     protected constructor() { }
 
     /**
@@ -43,23 +32,27 @@ export default class MediaFile {
      * @param app The app instance
      */
     protected static async fill(f: MediaFile, file: TFile, app: App): Promise<void> {
-        f.sidecar = await Sidecar.create(file.path, app);
+        f.file = file;
+        f.app = app;
+        
+        f.sidecar = await Sidecar.create(file, app);
 
-        f.name = file.basename;
-        f.extension = file.extension;
-        f.path = file.path;
-        f.type = await getMediaType(f.extension);
+        await f.update();
+    }
 
-        f.modified = file.stat.mtime;
-        f.created = file.stat.ctime;
+    public getType(): MediaTypes {
+        return getMediaType(this.file.extension);
     }
 
     /**
      * Update a file after it has been edited
-     * @param app The app instance
-     * @param file The binary file to update
      */
-    public async update(app: App, file: TFile): Promise<void> {
-        await MediaFile.fill(this, file, app);
+    public async update(): Promise<void> {
+        let last_updated = this.sidecar.getFrontmatterTag(MediaFile.last_updated_tag);
+
+        if (!last_updated ||
+            last_updated < this.file.stat.mtime) {
+            await this.sidecar.setFrontmatterTag(MediaFile.last_updated_tag, new Date(), "datetime");
+        }
     }
 }
