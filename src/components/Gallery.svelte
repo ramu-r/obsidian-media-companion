@@ -13,15 +13,22 @@
     let app: App = get(appStore.app);
     let query: Query = new Query(plugin.cache, app);
 
-    const groupSize = 10;
+    const groupSize = 5;
 
     function updateItems(e: QueryItem) {
         const nextIndex = ((+e.groupKey || 0) + 1) * groupSize;
 
-        items = [...items, ...query.getItems(nextIndex, nextIndex + groupSize)];
+        query.getItems(nextIndex, nextIndex + groupSize).then((res) => {
+            items = [...items, ...res];
+        });
     }
 
-    let items = [...query.getItems(0, 10)];
+    let items: QueryItem[] = [];
+
+    query.getItems(0, groupSize).then((res) => {
+        items = res;
+    });
+
 
     let galleryContainer: any;
     let ig: MasonryInfiniteGrid;

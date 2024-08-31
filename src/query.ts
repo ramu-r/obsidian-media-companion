@@ -98,7 +98,7 @@ export default class Query {
         }
     }
 
-    public getItems(from: number, to: number): QueryItem[] {
+    public async getItems(from: number, to: number): Promise<QueryItem[]> {
         let found = [];
         let mediaTypes = this.determineTypes();
         
@@ -118,7 +118,7 @@ export default class Query {
             if (mediaTypes.contains(MediaTypes.Image))
             {
                 let image = item as MCImage;
-                let size = image.getCachedSize();
+                let size = await image.getCachedSize();
 
                 if (this.query.dimensions) {
                     if (!(size) ||

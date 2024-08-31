@@ -3,8 +3,8 @@ import type { App, TFile } from "obsidian";
 import { extractColors } from "extract-colors";
 
 export default class MCImage extends MediaFile {
-    public static size_tag = "Size";
-    public static colors_tag = "Colors";
+    public static size_tag = "Size5";
+    public static colors_tag = "Colors4";
 
     protected constructor() { super(); }
 

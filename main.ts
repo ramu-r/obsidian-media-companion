@@ -23,10 +23,10 @@ export default class MediaCompanion extends Plugin {
 		
 		this.cache = new Cache(this.app, this);
 
-		this.app.workspace.onLayoutReady(() => {
+		this.app.workspace.onLayoutReady(async () => {
 			this.mutationHandler = new MutationHandler(this.app, this, this.cache);
 			
-			this.cache.initialize().then(() => {});
+			await this.cache.initialize();
 
 			// @ts-ignore
 			this.app.metadataTypeManager.properties[MediaFile.last_updated_tag.toLowerCase()].type = "datetime";
