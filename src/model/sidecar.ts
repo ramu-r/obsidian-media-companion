@@ -18,6 +18,7 @@ export default class Sidecar {
      */
     public static async create(mediaFile: TFile, app: App): Promise<Sidecar> {
         let file = new Sidecar();
+        
         file.mediaFile = mediaFile;
         file.app = app;
 

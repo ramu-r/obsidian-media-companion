@@ -7,6 +7,7 @@ import Cache from 'src/cache';
 import MutationHandler from 'src/mutationHandler';
 import pluginStore from 'src/stores/pluginStore';
 import appStore from 'src/stores/appStore';
+import MediaFile from 'src/model/mediaFile';
 
 export default class MediaCompanion extends Plugin {
 	settings!: MediaCompanionSettings;
@@ -26,6 +27,9 @@ export default class MediaCompanion extends Plugin {
 			this.mutationHandler = new MutationHandler(this.app, this, this.cache);
 			
 			this.cache.initialize().then(() => {});
+
+			// @ts-ignore
+			this.app.metadataTypeManager.properties[MediaFile.last_updated_tag.toLowerCase()].type = "datetime";
 		});
 
 		this.addRibbonIcon('image', 'Open Gallery', (_: MouseEvent) => {

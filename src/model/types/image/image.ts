@@ -3,8 +3,8 @@ import type { App, TFile } from "obsidian";
 import { extractColors } from "extract-colors";
 
 export default class MCImage extends MediaFile {
-    protected static size_tag = "size";
-    protected static colors_tag = "colors";
+    public static size_tag = "Size";
+    public static colors_tag = "Colors";
 
     protected constructor() { super(); }
 
@@ -33,17 +33,6 @@ export default class MCImage extends MediaFile {
     }
 
     /**
-     * Set the frontmatter properties in the related sidecar file
-     * @param app The app instance
-     */
-    private async setTags(): Promise<void> {
-        //let size = await this.readSize();
-        //await this.sidecar.setFrontmatterTag(MCImage.size_tag, [size.width, size.height]);
-        
-        //await this.sidecar.setFrontmatterTag(MCImage.colors_tag, await this.readColors());
-    }
-
-    /**
      * Extracts the colors from a given image file
      * @param file The file to read the colors from
      * @param app The app instance
@@ -65,12 +54,17 @@ export default class MCImage extends MediaFile {
         return colors;
     }
 
-    public getCachedColors(): any {
+    public async getCachedColors(): Promise<any> {
         if (!this.sidecar.getFrontmatterTag(MCImage.colors_tag)) {
-            this.update().then(() => {});
+            await this.setColors();
         }
 
         return this.sidecar.getFrontmatterTag(MCImage.colors_tag);
+    }
+
+    private async setColors() {
+        let colors = await this.readColors();
+        await this.sidecar.setFrontmatterTag(MCImage.colors_tag, colors);
     }
 
     /**
@@ -89,8 +83,6 @@ export default class MCImage extends MediaFile {
 
     /**
      * Read the width and height from a binary image
-     * @param file The binary file to read the size from
-     * @param app The app instance
      * @returns The size of the image
      */
     private async readSize(): Promise<{ width: number, height: number }> {
@@ -103,28 +95,38 @@ export default class MCImage extends MediaFile {
         return { width: image.naturalWidth, height: image.naturalHeight };
     }
 
-    public getCachedSize(): { width: number, height: number } | undefined {
-        if (!this.sidecar.getFrontmatterTag(MCImage.size_tag)) {
-            this.update().then(() => {});
+    public async getCachedSize(): Promise<{ width: number, height: number } | undefined> {
+        let value = this.sidecar.getFrontmatterTag(MCImage.size_tag);
+        
+        if (!value || !MCImage.parseSize(value)) {
+            await this.setSize();
         }
 
         return MCImage.parseSize(this.sidecar.getFrontmatterTag(MCImage.size_tag));
     }
 
+    private async setSize() {
+        let size = await this.readSize();
+        await this.sidecar.setFrontmatterTag(MCImage.size_tag, [size.width, size.height]);
+    }
+
     /**
      * Update the information stored about the file
      */
-    public async update() {
+    public async update() { 
         // If last_updated is older than when the files last updated, update regardless
         // or last_updated is not present
 
         // Or, if one of our things is not cached / can't be parsed
         let last_updated = this.sidecar.getFrontmatterTag(MediaFile.last_updated_tag);
 
+        await this.getCachedColors(); 
+        await this.getCachedSize();
+
         if (!last_updated ||
-            last_updated < this.file.stat.mtime ||
-            /* !this.getCachedSize() || !this.getCachedColors()*/ false) {
-            await this.setTags();
+            last_updated < this.file.stat.mtime) {
+            await this.setColors();
+            await this.setSize();
         }
 
         // Finally, update the last_updated tag

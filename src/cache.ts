@@ -29,21 +29,16 @@ export default class Cache {
 
         let timer = Date.now();
 
-        console.log(
-            "%c[Media Companion]: %cBuilding cache (If this is the first time, this may take a while)", 
-            "color: #00b7eb", "color: inherit"
-        );
-
         let total_files = files.length;
 
         files = files.filter(f => this.plugin.settings.extensions.contains(f.extension));
 
         console.log(
-            `%c[Media Companion]: %c${files.length} media files found of ${total_files} files total`, 
+            `%c[Media Companion]: %cBuilding cache with ${files.length} media files found of ${total_files} files total \n                   If this is the first time, this may take a while`, 
             "color: #00b7eb", "color: inherit"
         );
-        
-        await Promise.all(files.map(async (file) => {
+
+        for (let file of files) {
             let mediaFile;
 
             switch (getMediaType(file.extension)) {
@@ -57,7 +52,7 @@ export default class Cache {
             }
                 
             await this.addFile(mediaFile);
-        }));
+        }
 
         console.log(
             `%c[Media Companion]: %cFinished building cache in ${(Date.now() - timer) / 1000}s, ${this.files.length} files in cache`, 
