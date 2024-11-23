@@ -34,6 +34,7 @@ export default class Sidecar {
      */
     protected async fill() {
         this.file = await this.createIfNotExists();
+        await this.hide();
     }
 
     /**
@@ -46,6 +47,15 @@ export default class Sidecar {
             await this.app.vault.create(`${this.mediaFile.path}.md`, "");
 
         return file;
+    }
+
+    private async hide(): Promise<void> {
+        const explorer = this.app.workspace.getLeavesOfType("file-explorer")?.first()
+        if (!explorer) return;
+        // @ts-ignore
+        const element = explorer.view.fileItems[this.file.path]?.el;
+        if (!element) return;
+        element.hidden = true;
     }
 
     /**
