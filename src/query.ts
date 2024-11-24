@@ -5,12 +5,6 @@ import type MediaFile from "./model/mediaFile";
 import { MediaTypes } from "./model/types/mediaTypes";
 import type MCImage from "./model/types/image/image";
 
-export type QueryItem = { 
-    groupKey: number, 
-    resourcePath: string,
-    name: string,
-}
-
 export enum OrderByOptions {
     random = "random",
     creationDate = "creationDate",
@@ -47,12 +41,10 @@ export type QueryDetails = {
  */
 export default class Query {
     private cache: Cache;
-    private app: App;
     private files: MediaFile[];
     private query: QueryDetails;
     private currentIndex: number;
     private totalFound: number;
-    private group: number;
     public static readonly defaultQuery: QueryDetails = {
         color: null,
         folders: [],
@@ -68,14 +60,12 @@ export default class Query {
         hasFrontMatter: []
     }
 
-    public constructor(cache: Cache, app: App, query: QueryDetails = Query.defaultQuery) {
+    public constructor(cache: Cache, query: QueryDetails = Query.defaultQuery) {
         this.cache = cache;
-        this.app = app;
         this.files = [...cache.files];
         this.query = query;
         this.currentIndex = -1;
         this.totalFound = 0;
-        this.group = 0;
 
         switch (this.query.orderBy.option) {
             case OrderByOptions.creationDate:
@@ -98,11 +88,11 @@ export default class Query {
         }
     }
 
-    public async getItems(from: number, to: number): Promise<QueryItem[]> {
+    public async getItems(): Promise<MediaFile[]> {
         let found = [];
         let mediaTypes = this.determineTypes();
         
-        while (this.totalFound < to && this.currentIndex < this.cache.files.length) {
+        while (this.currentIndex < this.cache.files.length) {
             this.currentIndex++;
 
             let item = this.files[this.currentIndex];
@@ -178,19 +168,9 @@ export default class Query {
                 if (!hit) continue;
             }
 
-            if (this.totalFound < from) {
-                this.totalFound++;
-                continue;
-            }
-            found.push({
-                groupKey: this.group,
-                resourcePath: this.app.vault.getResourcePath(this.app.vault.getFileByPath(item.file.path)!),
-                name: item.file.name,
-            });
+            found.push(item);
             this.totalFound++;
         }
-        this.group++;
-
         return found;
     }
 

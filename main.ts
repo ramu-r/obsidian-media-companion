@@ -19,7 +19,6 @@ export default class MediaCompanion extends Plugin {
 		appStore.app.set(this.app);
 
 		await this.loadSettings();
-		await this.registerViews();
 		
 		this.cache = new Cache(this.app, this);
 
@@ -27,6 +26,8 @@ export default class MediaCompanion extends Plugin {
 			this.mutationHandler = new MutationHandler(this.app, this, this.cache);
 			
 			await this.cache.initialize();
+
+			await this.registerViews();
 
 			// @ts-ignore
 			this.app.metadataTypeManager.properties[MediaFile.last_updated_tag.toLowerCase()].type = "datetime";
