@@ -1,92 +1,145 @@
 <script lang="ts">
-    import { MasonryInfiniteGrid } from "@egjs/svelte-infinitegrid";
-	import { onMount, tick } from "svelte";
+	import { onDestroy, onMount, tick } from "svelte";
     import type MediaCompanion from "main";
-    import type { QueryItem } from "src/query";
 	import pluginStore from "src/stores/pluginStore";
 	import Query from "src/query";
 	import { get } from "svelte/store";
 	import type { App } from "obsidian";
 	import appStore from "src/stores/appStore";
+    import Masonry from "masonry-layout";
+	import type MediaFile from "src/model/mediaFile";
+    import imagesLoaded from "imagesloaded";
 
     let plugin: MediaCompanion = get(pluginStore.plugin);
     let app: App = get(appStore.app);
-    let query: Query = new Query(plugin.cache, app);
+    let query: Query = new Query(plugin.cache);
 
-    const groupSize = 5;
+    let masonry: Masonry;
+    let masonryContainer: HTMLDivElement;
+    let parentElement: HTMLElement;
+    let items: MediaFile[] = [];
+    let allItems: MediaFile[] = [];
 
-    function updateItems(e: QueryItem) {
-        const nextIndex = ((+e.groupKey || 0) + 1) * groupSize;
+    let isLoading: boolean = false;
+    let currentGroup: number = 0;
+    const groupSize: number = 20;
+    
+    let resizeTimeout: NodeJS.Timeout | null = null;
+    const resizeObserver = new ResizeObserver(() => { 
+        if (parentElement && masonryContainer) {
+            // @ts-ignore
+            masonryContainer.style.width = `${parentElement.offsetWidth}px`;
 
-        query.getItems(nextIndex, nextIndex + groupSize).then((res) => {
-            items = [...items, ...res];
-        });
+            if (resizeTimeout) clearTimeout(resizeTimeout);
+
+            resizeTimeout = setTimeout(() => {
+                // Need to do it twice here to adjust the image sizes and then
+                // adjust the masonry layout to fit the new image sizes
+                reloadMasonry();
+                reloadMasonry();
+            }, 50);
+        }
+    });
+
+    async function loadNextGroup() {
+        isLoading = true;
+
+        const startIndex = currentGroup * groupSize;
+        const endIndex = startIndex + groupSize;
+
+        if (startIndex >= allItems.length) return; // Don't bother with isLoading, we're done
+
+        const nextGroup = allItems.slice(startIndex, endIndex);
+        items = [...items, ...nextGroup];
+
+        await tick();
+
+        reloadMasonry();
+
+        currentGroup++;
+
+        if (!isScrollbarVisible()) {
+            await loadNextGroup();
+        }
+        else {
+            isLoading = false;
+        }
     }
 
-    let items: QueryItem[] = [];
-
-    query.getItems(0, groupSize).then((res) => {
-        items = res;
-    });
-
-
-    let galleryContainer: any;
-    let ig: MasonryInfiniteGrid;
-
-    // Needed to be moved up here, otherwise it breaks
-    const onRequestAppend = ({ detail: e }: any) => { updateItems(e); };
-
-    onMount(() => {
-        tick().then(() => {
-            // We need this because sometimes the thing doesn't realize it's at the bottom of
-            // the page... So we're checking ourselves, and then rendering the items if we are
-            // which also requests new items if they're needed
-            galleryContainer.addEventListener("scroll", () => {
-                if (Math.abs(galleryContainer.scrollHeight - galleryContainer.scrollTop - galleryContainer.clientHeight) < 1) {
-                    // For some reason, whether this works or not is inconsistent...
-                    // But it works well enough for now. And as far as I can observe, it does actually
-                    // add the items eventually, if it can. There's a danger of it skipping items though
-                    updateItems(items[items.length-1]);
-                }
-                ig.renderItems();
+    function reloadMasonry() {
+        if (masonry && masonryContainer) {
+            imagesLoaded(masonryContainer, () => {
+                // @ts-ignore
+                masonry.reloadItems();
+                // @ts-ignore
+                masonry.layout();
             });
+        }
+    }
+ 
+    function onScroll() {
+        if (!masonryContainer?.parentElement) return;
+
+        const parent = masonryContainer.parentElement;
+        const nearBottom = parent.scrollTop + parent.clientHeight >= parent.scrollHeight - 100;
+
+        if (nearBottom && !isLoading) loadNextGroup();
+    }
+
+    function isScrollbarVisible() {
+        const parent = masonryContainer.parentElement;
+        return parent ? parent.scrollHeight > parent.clientHeight : false;
+    }
+
+    onMount(async () => {
+        allItems = await query.getItems();
+
+        masonry = new Masonry(masonryContainer, {
+            transitionDuration: 0, // Turn off animations; Looks weird when adding items
+            itemSelector: ".gallery-item",
+            // columnWidth: ".gallery-sizer",
+            fitWidth: true,
         });
+
+        await loadNextGroup();
+
+        parentElement = masonryContainer.parentElement as HTMLElement;
+        resizeObserver.observe(parentElement);
+
+        //@ts-ignore
+        parentElement.style.overflowX = "hidden";
+
+        parentElement.addEventListener("scroll", onScroll);
     });
 
+    onDestroy(() => {
+        masonryContainer.parentElement?.removeEventListener("scroll", onScroll);
+    });
 </script>
-  
-<div class="gallery-container" bind:this="{galleryContainer}">
-    <MasonryInfiniteGrid
-        bind:this={ig}
-        class="gallery"    
-        scrollContainer={galleryContainer}
-        usePlaceholder={true}
-        useResizeObserver={true}
-        resizeDebounce={10}
-        percentage={true}
-        columns={3}
-        gap={0}
-        {items}
-        on:requestAppend={onRequestAppend}
-        let:visibleItems
-    >
-    {#each visibleItems as item (item.key)}
-    <!-- TODO: Make sure this class doesn't change, add class to image, centre image if
-    not full width -->
-        <div class="item" style="width: calc(calc(99.8% / {3}) - 4px);">
-            <img src="{item.data.resourcePath}" alt="{item.data.name}"/>
+
+<div class="gallery-masonry" bind:this={masonryContainer}>
+    {#each items as item}
+        <div class="gallery-item">
+            <img src={app.vault.getResourcePath(item.file)} alt={item.file.name} loading="lazy" />
         </div>
     {/each}
-    </MasonryInfiniteGrid>
 </div>
-  
+
 <style>
-    .gallery-container {
-        /* We need to set the height here so the masonry works
-            Just setting the max-height does not work */
-        height: 100%;
-        width: 100%;
-        overflow-y: scroll;
-        overflow-x: hidden;
-    }
+  :global(.gallery-masonry) {
+    display: block;
+    min-width: 100%;
+  }
+
+  :global(.gallery-item) {
+    padding: 5px;
+    width: 20%;
+    box-sizing: border-box;
+  }
+
+  :global(.gallery-item img) {
+    width: 100%;
+    height: auto;
+    display: block;
+  }
 </style>

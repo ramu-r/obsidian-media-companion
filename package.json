@@ -13,6 +13,8 @@
 	"license": "MIT",
 	"devDependencies": {
 		"@tsconfig/svelte": "^5.0.4",
+		"@types/masonry-layout": "^4.2.8",
+		"@types/imagesloaded": "^4.1.6",
 		"@types/node": "^16.11.6",
 		"@typescript-eslint/eslint-plugin": "5.29.0",
 		"@typescript-eslint/parser": "5.29.0",
@@ -27,7 +29,8 @@
 		"typescript": "^5.4.5"
 	},
 	"dependencies": {
-		"@egjs/svelte-infinitegrid": "^4.11.1",
-		"extract-colors": "^4.0.4"
+		"extract-colors": "^4.0.4",
+		"imagesloaded": "^5.0.0",
+		"masonry-layout": "^4.2.2"
 	}
 }
