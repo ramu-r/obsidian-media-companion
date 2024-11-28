@@ -1,4 +1,4 @@
-# Obsidian Media Companion
+# Media Companion Plugin for Obsidian
 
 > [!WARNING]
 > The plugin is still in active development, and not yet ready for use

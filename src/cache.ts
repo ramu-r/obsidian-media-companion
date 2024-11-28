@@ -14,6 +14,9 @@ export default class Cache {
     private app: App;
     private plugin: MediaCompanion;
 
+    private initializing: boolean = false;
+    private initialized: boolean = false;
+
     public constructor(app: App, plugin: MediaCompanion) {
         this.files = [];
         
@@ -25,6 +28,18 @@ export default class Cache {
      * Initialize the cahce with all the (supported) files in the vault
      */
     public async initialize(): Promise<void> {
+        if (this.initialized) return;
+        
+        // Prevent multiple initializations
+        if (this.initializing) {
+            while (this.initializing) {
+                await new Promise(resolve => setTimeout(resolve, 100));
+            }
+            return;
+        }
+
+        this.initializing = true;
+        
         let files = this.app.vault.getFiles();
 
         let timer = Date.now();
@@ -58,6 +73,9 @@ export default class Cache {
             `%c[Media Companion]: %cFinished building cache in ${(Date.now() - timer) / 1000}s, ${this.files.length} files in cache`, 
             "color: #00b7eb", "color: inherit"
         );
+
+        this.initialized = true;
+        this.initializing = false;
     }
 
     /**
@@ -98,7 +116,11 @@ export default class Cache {
     public async isSidecar(file: TFile): Promise<boolean> {
         if (file.extension !== "md") return false;
 
-        let mediaPath = file.path.substring(0, file.path.length - 3);
+        // Check if the path ends in ".sidecar.md"
+        if (!file.path.endsWith(".sidecar.md")) return false;
+
+        // Else, get the media file and check if it exists
+        let mediaPath = file.path.substring(0, file.path.length - 11);        
         let mediaFile = await this.getFile(mediaPath);
 
         return mediaFile !== undefined;

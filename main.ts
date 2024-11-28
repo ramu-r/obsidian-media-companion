@@ -1,4 +1,4 @@
-import { App, Plugin, PluginSettingTab, Setting, Workspace } from 'obsidian';
+import { App, MarkdownEditView, MarkdownRenderer, normalizePath, Plugin, PluginSettingTab, Setting, View, Workspace } from 'obsidian';
 import { GalleryView, VIEW_TYPE_GALLERY } from 'src/views/gallery-view';
 import { DEFAULT_SETTINGS } from 'src/settings'
 
@@ -8,6 +8,8 @@ import MutationHandler from 'src/mutationHandler';
 import pluginStore from 'src/stores/pluginStore';
 import appStore from 'src/stores/appStore';
 import MediaFile from 'src/model/mediaFile';
+import { SidecarView, VIEW_TYPE_SIDECAR } from 'src/views/sidecar-view';
+import activeStore from 'src/stores/activeStore';
 
 export default class MediaCompanion extends Plugin {
 	settings!: MediaCompanionSettings;
@@ -21,15 +23,17 @@ export default class MediaCompanion extends Plugin {
 		await this.loadSettings();
 		
 		this.cache = new Cache(this.app, this);
+		this.mutationHandler = new MutationHandler(this.app, this, this.cache);
+
+		// We want to register our views here but only start rendering them once the cache is initialized
+		await this.registerViews();
 
 		this.app.workspace.onLayoutReady(async () => {
-			this.mutationHandler = new MutationHandler(this.app, this, this.cache);
-			
 			await this.cache.initialize();
 
-			await this.registerViews();
+			this.mutationHandler.initializeEvents();
 
-			// @ts-ignore
+			// @ts-ignore - Need to set this manually, unsure if there's a better way
 			this.app.metadataTypeManager.properties[MediaFile.last_updated_tag.toLowerCase()].type = "datetime";
 		});
 
@@ -46,6 +50,7 @@ export default class MediaCompanion extends Plugin {
 
 	async registerViews() {
 		this.registerView(VIEW_TYPE_GALLERY, (leaf) => new GalleryView(leaf, this));
+		this.registerView(VIEW_TYPE_SIDECAR, (leaf) => new SidecarView(leaf));
 	}
 
 	async createGallery() {
@@ -64,6 +69,20 @@ export default class MediaCompanion extends Plugin {
 				console.log("A");
 			},
 		});
+
+		this.addCommand({
+			id: 'test-sidecar',
+			name: 'Test Sidecar',
+			callback: () => {
+				activeStore.file.set(this.cache.files[0]);
+
+				const leaf = this.app.workspace.getRightLeaf(false);
+				if (leaf) {
+					leaf.setViewState({type: VIEW_TYPE_SIDECAR}).then(() => {});
+					this.app.workspace.revealLeaf(leaf); 
+				}
+			}
+		})
 	}
 
 	async loadSettings() {
@@ -89,13 +108,12 @@ class MediaCompanionSettingTab extends PluginSettingTab {
 		containerEl.empty();
 
 		new Setting(containerEl)
-			.setName('Setting #1')
-			.setDesc('It\'s a secret')
-			.addText(text => text
-				.setPlaceholder('Enter your secret')
-				.setValue(this.plugin.settings.mySetting)
+			.setName('Hide sidecar files')
+			.setDesc('Hide sidecar files in the file explorer')
+			.addToggle(toggle => toggle
+				.setValue(this.plugin.settings.hideSidecar)
 				.onChange(async (value) => {
-					this.plugin.settings.mySetting = value;
+					this.plugin.settings.hideSidecar = value;
 					await this.plugin.saveSettings();
 				}));
 	}

@@ -13,8 +13,8 @@
 	"license": "MIT",
 	"devDependencies": {
 		"@tsconfig/svelte": "^5.0.4",
-		"@types/masonry-layout": "^4.2.8",
 		"@types/imagesloaded": "^4.1.6",
+		"@types/masonry-layout": "^4.2.8",
 		"@types/node": "^16.11.6",
 		"@typescript-eslint/eslint-plugin": "5.29.0",
 		"@typescript-eslint/parser": "5.29.0",
@@ -23,6 +23,7 @@
 		"esbuild-svelte": "^0.8.0",
 		"madge": "^8.0.0",
 		"obsidian": "latest",
+		"obsidian-typings": "^2.3.4",
 		"svelte": "^4.2.15",
 		"svelte-preprocess": "^5.1.4",
 		"tslib": "2.4.0",

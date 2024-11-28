@@ -1,10 +1,10 @@
 export interface MediaCompanionSettings {
-	mySetting: string;
+	hideSidecar: boolean
     extensions: string[];
 }
 
 export const DEFAULT_SETTINGS: MediaCompanionSettings = {
-	mySetting: 'default',
+	hideSidecar: false,
     extensions: [
         'png',
         'jpg',

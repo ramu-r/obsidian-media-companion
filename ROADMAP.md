@@ -7,12 +7,16 @@ A description of feature that are currently being worked on / being considered
 Everything needed for a minimal viable product. In general, this means: Cleaning things up, making it respond to files being removed / added / moved / edited.
 
 - [x] Remove sidecar files from the file explorer (default explorer only)
-- [ ] Allow users to turn of hiding sidecar files
-- [ ] When opening an media file, open a side-view with 1. The media file 2. An editor window for the sidecar file
-- [ ] When clicking on a file in the gallery view, do the same as above, and highlight the file
-- [ ] Remove sidecar files from the graph view - possibly add sidecar tag to file
-- [ ] Update gallery to use own system. The current system is quite broken
-- [ ] Show a model with updates when a lot of new files have been detected; Show progress for feature extraction
+- [ ] Allow users to turn off hiding sidecar files
+- [ ] Hide things from the file explorer also if there are multiple windows or it is revealed later
+- [ ] When opening an media file, open a side-view with 1. The media file 2. An editor window for the sidecar file (WIP)
+- [x] When clicking on a file in the gallery view, do the same as above, and highlight the file (WIP)
+- [x] Remove sidecar files from the graph view - possibly add sidecar tag to file - Not necessary, people can filter them themselves
+- [x] Update gallery to use own system. The current system is quite broken
+- [ ] Show a modal with updates when a lot of new files have been detected; Show progress for feature extraction
+- [ ] Allow searching in the gallery
+- [ ] Make the gallery responsive
+- [ ] Make sure things work on mobile
 
 ## File types
 

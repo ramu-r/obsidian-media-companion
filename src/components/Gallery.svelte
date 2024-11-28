@@ -9,26 +9,129 @@
     import Masonry from "masonry-layout";
 	import type MediaFile from "src/model/mediaFile";
     import imagesLoaded from "imagesloaded";
+	import activeStore from "src/stores/activeStore";
 
     let plugin: MediaCompanion = get(pluginStore.plugin);
     let app: App = get(appStore.app);
-    let query: Query = new Query(plugin.cache);
+
+    plugin.mutationHandler.addEventListener("file-created", (file) => {})
+
+    type DisplayItem = {
+        uri: string;
+        file: MediaFile;
+    }
 
     let masonry: Masonry;
     let masonryContainer: HTMLDivElement;
-    let parentElement: HTMLElement;
-    let items: MediaFile[] = [];
+    let scrollContainer: HTMLElement;
+    let items: DisplayItem[] = [];
     let allItems: MediaFile[] = [];
+    let query: Query = new Query(plugin.cache);
 
     let isLoading: boolean = false;
     let currentGroup: number = 0;
     const groupSize: number = 20;
     
-    let resizeTimeout: NodeJS.Timeout | null = null;
-    const resizeObserver = new ResizeObserver(() => { 
-        if (parentElement && masonryContainer) {
-            // @ts-ignore
-            masonryContainer.style.width = `${parentElement.offsetWidth}px`;
+    let resizeTimeout: ReturnType<typeof setTimeout> | null = null;
+    const resizeObserver = new ResizeObserver(() => onResize());
+
+    // @ts-ignore
+    plugin.mutationHandler.addEventListener("file-created", onNewFile);
+    // @ts-ignore
+    plugin.mutationHandler.addEventListener("file-removed", onFileRemoved);
+    // @ts-ignore
+    plugin.mutationHandler.addEventListener("file-changed", onFileChanged);
+    // @ts-ignore
+    plugin.mutationHandler.addEventListener("file-moved", onFileMoved);
+    // @ts-ignore
+    plugin.mutationHandler.addEventListener("sidecar-edited", onFileChanged);
+
+    function getDisplayItem(file: MediaFile): DisplayItem {
+        return {
+            uri: app.vault.getResourcePath(file.file),
+            file: file,
+        };
+    }
+
+    function onFileMoved(e: {file: MediaFile, oldPath: string}) {
+        let allFilesIndex = allItems.findIndex((item) => item.file.path === e.oldPath);
+        let itemsIndex = items.findIndex((item) => item.file.file.path === e.oldPath);
+
+        query.testFile(e.file).then((res) => {
+            if (res) {
+                if (allFilesIndex === -1) {
+                    allItems = [e.file, ...allItems];
+                } else {
+                    allItems[allFilesIndex] = e.file;
+                }
+                if (itemsIndex === -1) {
+                    items = [getDisplayItem(e.file), ...items];
+                } else {
+                    items[itemsIndex] = getDisplayItem(e.file);
+                }
+            }
+            else {
+                if (allFilesIndex !== -1) {
+                    allItems = allItems.splice(allFilesIndex, 1);
+                }
+                if (itemsIndex !== -1) {
+                    items = items.splice(itemsIndex, 1);
+                }
+            }
+
+            items = [...items];
+            reloadMasonry();
+        })
+    }
+
+    function onNewFile(e: { detail: MediaFile }) {
+        if (query) {
+            query.testFile(e.detail).then((res) => {
+                if (res) {
+                    allItems = [e.detail, ...allItems];
+                    items = [getDisplayItem(e.detail), ...items];
+                    reloadMasonry();
+                }
+            });
+        }
+    }
+
+    function onFileRemoved(e: { detail: MediaFile }) {
+        allItems = allItems.filter((item) => item !== e.detail);
+        items = items.filter((item) => item.file !== e.detail);
+        items = [...items];
+        reloadMasonry();
+    }
+
+    function onFileChanged(e: { detail: MediaFile }) {
+        let allFilesIndex = allItems.findIndex((item) => item === e.detail);
+        let itemsIndex = items.findIndex((item) => item.file === e.detail);
+
+        query.testFile(e.detail).then((res) => {
+            if (res) {
+                if (allFilesIndex === -1) {
+                    allItems = [e.detail, ...allItems];
+                }
+                if (itemsIndex === -1) {
+                    items = [getDisplayItem(e.detail), ...items];
+                }
+            }
+            else {
+                if (allFilesIndex !== -1) {
+                    allItems = allItems.splice(allFilesIndex, 1);
+                }
+                if (itemsIndex !== -1) {
+                    items = items.splice(itemsIndex, 1);
+                }
+            }
+
+            items = [...items];
+            reloadMasonry();
+        });
+    }
+
+    function onResize() { 
+        if (scrollContainer && masonryContainer) {
 
             if (resizeTimeout) clearTimeout(resizeTimeout);
 
@@ -39,7 +142,7 @@
                 reloadMasonry();
             }, 50);
         }
-    });
+    }
 
     async function loadNextGroup() {
         isLoading = true;
@@ -50,13 +153,24 @@
         if (startIndex >= allItems.length) return; // Don't bother with isLoading, we're done
 
         const nextGroup = allItems.slice(startIndex, endIndex);
-        items = [...items, ...nextGroup];
+
+        // Turn nextGroup into a object with { uri, file }
+        // This is needed for the masonry layout
+        let formattedGroup = nextGroup.map((item) => {
+            return getDisplayItem(item);
+        });
+
+        items = [...items, ...formattedGroup];
 
         await tick();
 
         reloadMasonry();
 
         currentGroup++;
+
+        // Small timeout to prevent loading everything instantly
+        // Also needed for `isScrollbarVisible` to work correctly
+        await new Promise((resolve) => setTimeout(resolve, 100));
 
         if (!isScrollbarVisible()) {
             await loadNextGroup();
@@ -78,68 +192,102 @@
     }
  
     function onScroll() {
-        if (!masonryContainer?.parentElement) return;
+        if (!scrollContainer) return;
 
-        const parent = masonryContainer.parentElement;
-        const nearBottom = parent.scrollTop + parent.clientHeight >= parent.scrollHeight - 100;
+        const nearBottom = scrollContainer.scrollTop + scrollContainer.clientHeight >= scrollContainer.scrollHeight - 100;
 
         if (nearBottom && !isLoading) loadNextGroup();
     }
 
     function isScrollbarVisible() {
-        const parent = masonryContainer.parentElement;
-        return parent ? parent.scrollHeight > parent.clientHeight : false;
+        return scrollContainer.scrollHeight > scrollContainer.clientHeight && scrollContainer.clientHeight != 0;
     }
 
     onMount(async () => {
+        await plugin.cache.initialize();
         allItems = await query.getItems();
 
         masonry = new Masonry(masonryContainer, {
             transitionDuration: 0, // Turn off animations; Looks weird when adding items
             itemSelector: ".gallery-item",
-            // columnWidth: ".gallery-sizer",
             fitWidth: true,
         });
 
         await loadNextGroup();
 
-        parentElement = masonryContainer.parentElement as HTMLElement;
-        resizeObserver.observe(parentElement);
+        resizeObserver.observe(scrollContainer);
 
-        //@ts-ignore
-        parentElement.style.overflowX = "hidden";
-
-        parentElement.addEventListener("scroll", onScroll);
+        scrollContainer.addEventListener("scroll", onScroll);
     });
 
     onDestroy(() => {
-        masonryContainer.parentElement?.removeEventListener("scroll", onScroll);
+        scrollContainer.removeEventListener("scroll", onScroll);
+        if (resizeObserver) {
+            resizeObserver.disconnect();
+        }
+
+        // @ts-ignore
+        plugin.mutationHandler.removeEventListener("file-created", onNewFile);
+        // @ts-ignore
+        plugin.mutationHandler.removeEventListener("file-removed", onFileRemoved);
+        // @ts-ignore
+        plugin.mutationHandler.removeEventListener("file-changed", onFileChanged);
+        // @ts-ignore
+        plugin.mutationHandler.removeEventListener("file-moved", onFileChanged);
+        // @ts-ignore
+        plugin.mutationHandler.removeEventListener("sidecar-edited", onFileChanged);
     });
+
+    function onFileClicked(file: MediaFile) {
+        activeStore.file.set(file);
+    }
 </script>
 
-<div class="gallery-masonry" bind:this={masonryContainer}>
-    {#each items as item}
-        <div class="gallery-item">
-            <img src={app.vault.getResourcePath(item.file)} alt={item.file.name} loading="lazy" />
-        </div>
-    {/each}
+{#await plugin.cache.initialize()}
+    <h1 class="media-companion-gallery-loading">Loading cache...</h1>
+{:then}
+<div class="gallery-container" bind:this={scrollContainer}>
+    <div class="gallery-masonry" bind:this={masonryContainer}>
+        {#each items as item}
+            <button class="gallery-item" on:click={() => onFileClicked(item.file)}>
+                <img src={item.uri} alt={item.file.file.name} loading="lazy" />
+            </button>
+        {/each}
+    </div>
 </div>
+{/await}
 
 <style>
-  :global(.gallery-masonry) {
-    display: block;
-    min-width: 100%;
-  }
+    :global(.gallery-masonry) {
+        display: block;
+        width: 100%;
+    }
 
-  :global(.gallery-item) {
-    padding: 5px;
-    width: 20%;
-    box-sizing: border-box;
-  }
+    :global(.media-companion-gallery-loading) {
+        text-align: center;
+    }
 
-  :global(.gallery-item img) {
-    width: 100%;
-    height: auto;
-    display: block;
-  }
+    :global(.gallery-container) {
+        display: flex;
+        justify-content: center;
+        max-height: 100%;
+        overflow: scroll;
+    }
+
+    :global(button.gallery-item) {
+        all: unset;
+        padding: 5px;
+        width: 20%;
+        box-sizing: border-box;
+    }
+
+    :global(.gallery-item:focus img) {
+        outline: 2px solid white;
+    }
+
+    :global(.gallery-item img) {
+        width: 100%;
+        height: auto;
+        display: block;
+    }
 </style>

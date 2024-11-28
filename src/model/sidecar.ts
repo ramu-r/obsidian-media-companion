@@ -43,8 +43,8 @@ export default class Sidecar {
      * @returns The already existing or newly created sidecar file
      */
     private async createIfNotExists(): Promise<TFile> {
-        let file = this.app.vault.getFileByPath(`${this.mediaFile.path}.md`) ?? 
-            await this.app.vault.create(`${this.mediaFile.path}.md`, "");
+        let file = this.app.vault.getFileByPath(`${this.mediaFile.path}.sidecar.md`) ?? 
+            await this.app.vault.create(`${this.mediaFile.path}.sidecar.md`, "");
 
         return file;
     }
@@ -53,7 +53,8 @@ export default class Sidecar {
         const explorer = this.app.workspace.getLeavesOfType("file-explorer")?.first()
         if (!explorer) return;
         // @ts-ignore
-        const element = explorer.view.fileItems[this.file.path]?.el;
+        if (!explorer.view?.fileItems) return;
+        const element = explorer.view?.fileItems[this.file.path]?.el;
         if (!element) return;
         element.hidden = true;
     }

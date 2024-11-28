@@ -53,20 +53,22 @@ export default class Query {
         shape: [],
         dimensions: null,
         orderBy: {
-            option: OrderByOptions.random,
+            option: OrderByOptions.name,
             value: ""
         },
-        orderIncreasing: false,
+        orderIncreasing: true,
         hasFrontMatter: []
     }
 
     public constructor(cache: Cache, query: QueryDetails = Query.defaultQuery) {
         this.cache = cache;
-        this.files = [...cache.files];
         this.query = query;
         this.currentIndex = -1;
         this.totalFound = 0;
+        this.files = [];
+    }
 
+    public async orderFiles() {
         switch (this.query.orderBy.option) {
             case OrderByOptions.creationDate:
                 this.files.sort((a, b) => a.file.stat.ctime - b.file.stat.ctime);
@@ -88,88 +90,101 @@ export default class Query {
         }
     }
 
-    public async getItems(): Promise<MediaFile[]> {
-        let found = [];
+    public async testFile(item: MediaFile): Promise<boolean> {
         let mediaTypes = this.determineTypes();
+
+        if (mediaTypes.length > 0) {
+            if (!mediaTypes.includes(item.getType())) return false;
+        }
+
+        if (this.query.fileTypes.length > 0) {
+            if (!this.query.fileTypes.contains(item.file.extension)) return false;
+        }
+
+        if (mediaTypes.contains(MediaTypes.Image))
+        {
+            let image = item as MCImage;
+            let size = await image.getCachedSize();
+
+            if (this.query.dimensions) {
+                if (!(size) ||
+                    size.width < this.query.dimensions.mindWidth || size.width > this.query.dimensions.maxWidth ||
+                    size.height < this.query.dimensions.minHeight || size.height > this.query.dimensions.maxHeight) return false;
+            }
+
+            if (this.query.shape.length > 0) {
+                if (!(size) || !this.query.shape.contains(getShape(size.width, size.height))) return false;
+            }
+
+            if (this.query.color) {
+                // TODO: This is a bit more complicated. We want to do
+                // distance checking here...
+            }
+        }
+
+        // Folders...
+        if (this.query.folders.length > 0) {
+            let hit = false;
+
+            for (let folder of this.query.folders) {
+                if (item.file.path.startsWith(folder)) {
+                    hit = true;
+                    break;
+                }
+            }
+
+            if (!hit) return false;
+        }
+
+        // Tags...
+        if (this.query.tags.length > 0) {
+            let hit = false;
+
+            for (let tag of this.query.tags) {
+                if (item.sidecar.getTags().contains(tag)) {
+                    hit = true;
+                    break;
+                }
+            }
+
+            if (!hit) return false;
+        }
+
+        // Frontmatter...
+        if (this.query.hasFrontMatter.length > 0) {
+            let hit = false;
+
+            for (let fm of this.query.hasFrontMatter) {
+                if (item.sidecar.getFrontmatterTag(fm)) {
+                    hit = true;
+                    break;
+                }
+            }
+
+            if (!hit) return false;
+        }
+
+        return true;
+    }
+
+    public async getItems(): Promise<MediaFile[]> {
+        await this.cache.initialize();
+
+        this.files = [...this.cache.files];
+
+        await this.orderFiles();
+
+        let found = [];
         
-        while (this.currentIndex < this.cache.files.length) {
+        while (this.currentIndex < this.cache.files.length - 1) {
             this.currentIndex++;
 
             let item = this.files[this.currentIndex];
 
-            if (mediaTypes.length > 0) {
-                if (!mediaTypes.includes(item.getType())) continue;
+            if (await this.testFile(item)) {
+                found.push(item);
+                this.totalFound++;
             }
-
-            if (this.query.fileTypes.length > 0) {
-                if (!this.query.fileTypes.contains(item.file.extension)) continue;
-            }
-
-            if (mediaTypes.contains(MediaTypes.Image))
-            {
-                let image = item as MCImage;
-                let size = await image.getCachedSize();
-
-                if (this.query.dimensions) {
-                    if (!(size) ||
-                        size.width < this.query.dimensions.mindWidth || size.width > this.query.dimensions.maxWidth ||
-                        size.height < this.query.dimensions.minHeight || size.height > this.query.dimensions.maxHeight) continue;
-                }
-
-                if (this.query.shape.length > 0) {
-                    if (!(size) || !this.query.shape.contains(getShape(size.width, size.height))) continue;
-                }
-
-                if (this.query.color) {
-                    // TODO: This is a bit more complicated. We want to do
-                    // distance checking here...
-                }
-            }
-
-            // Folders...
-            if (this.query.folders.length > 0) {
-                let hit = false;
-
-                for (let folder of this.query.folders) {
-                    if (item.file.path.startsWith(folder)) {
-                        hit = true;
-                        break;
-                    }
-                }
-
-                if (!hit) continue;
-            }
-
-            // Tags...
-            if (this.query.tags.length > 0) {
-                let hit = false;
-
-                for (let tag of this.query.tags) {
-                    if (item.sidecar.getTags().contains(tag)) {
-                        hit = true;
-                        break;
-                    }
-                }
-
-                if (!hit) continue;
-            }
-
-            // Frontmatter...
-            if (this.query.hasFrontMatter.length > 0) {
-                let hit = false;
-
-                for (let fm of this.query.hasFrontMatter) {
-                    if (item.sidecar.getFrontmatterTag(fm)) {
-                        hit = true;
-                        break;
-                    }
-                }
-
-                if (!hit) continue;
-            }
-
-            found.push(item);
-            this.totalFound++;
         }
         return found;
     }
