@@ -7,16 +7,19 @@ A description of feature that are currently being worked on / being considered
 Everything needed for a minimal viable product. In general, this means: Cleaning things up, making it respond to files being removed / added / moved / edited.
 
 - [x] Remove sidecar files from the file explorer (default explorer only)
-- [ ] Allow users to turn off hiding sidecar files
-- [ ] Hide things from the file explorer also if there are multiple windows or it is revealed later
-- [ ] When opening an media file, open a side-view with 1. The media file 2. An editor window for the sidecar file (WIP)
-- [x] When clicking on a file in the gallery view, do the same as above, and highlight the file (WIP)
+- [x] Make auto-renaming of sidecars actually work...
+- [x] Allow users to turn off hiding sidecar files
+- [x] Hide things from the file explorer also if there are multiple windows or it is revealed later
+- [x] When opening an media file, open a side-view with 1. The media file 2. An editor window for the sidecar file
+- [x] When clicking on a file in the gallery view, do the same as above, and highlight the file
 - [x] Remove sidecar files from the graph view - possibly add sidecar tag to file - Not necessary, people can filter them themselves
 - [x] Update gallery to use own system. The current system is quite broken
+- [x] Make file rename red when file can't be renamed to given name
 - [ ] Show a modal with updates when a lot of new files have been detected; Show progress for feature extraction
 - [ ] Allow searching in the gallery
 - [ ] Make the gallery responsive
 - [ ] Make sure things work on mobile
+- [ ] Write test cases, perform them
 
 ## File types
 

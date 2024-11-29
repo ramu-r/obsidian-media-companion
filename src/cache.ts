@@ -3,6 +3,7 @@ import MediaFile from "./model/mediaFile";
 import type MediaCompanion from "main";
 import { getMediaType, MediaTypes } from "./model/types/mediaTypes";
 import MCImage from "./model/types/image/image";
+import type { FileExplorerLeaf } from "obsidian-typings";
 
 /**
  * Represents a cache for media files
@@ -91,10 +92,10 @@ export default class Cache {
      * @param file The file to remove
      * @returns Whether the operation removed a file or not
      */
-    public async removeFile(file: string): Promise<boolean> {
+    public async removeFile(file: TFile): Promise<boolean> {
         let length = this.files.length;
         
-        this.files = this.files.filter(f => f.file.path !== file);
+        this.files = this.files.filter(f => f.file !== file);
 
         return this.files.length < length;
     }
@@ -124,5 +125,11 @@ export default class Cache {
         let mediaFile = await this.getFile(mediaPath);
 
         return mediaFile !== undefined;
+    }
+
+    public async hideAll(leaf: FileExplorerLeaf): Promise<void> {
+        for (let file of this.files) {
+            await file.sidecar.hide(leaf);
+        }
     }
 }

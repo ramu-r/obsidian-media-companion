@@ -84,7 +84,7 @@ export default class MutationHandler extends EventTarget {
             }
         });
 
-        this.cache.removeFile(file.path).then(() => {});
+        this.cache.removeFile(file).then(() => {});
         
         // Get sidecar file and remove it
         let sidecar = this.app.vault.getFileByPath(`${file.path}.sidecar.md`);
@@ -115,24 +115,23 @@ export default class MutationHandler extends EventTarget {
         });
 
         if (!this.plugin.settings.extensions.contains(file.extension)) return;
-      
-        this.cache.removeFile(oldpath).then(removed => {
-            // If the file was in cache, keep going
-            if (removed) {
-                // Get the old sidecar; If it exists, rename it to the new path
-                // so we keep its contents
-                let oldSidecar = this.app.vault.getFileByPath(`${oldpath}.sidecar.md`);
 
-                if (oldSidecar) {
-                    this.app.vault.rename(oldSidecar, `${file.path}.sidecar.md`).then(() => {});
-                }
-        
-                MediaFile.create(file, this.app).then(mediaFile => {
-                    this.cache.addFile(mediaFile).then(() => {});
-                    this.dispatchEvent(new CustomEvent("file-moved", { detail: {file: mediaFile, oldPath: oldpath} }));
+        this.cache.getFile(file.path).then((cacheFile) => {
+            let sidecar = this.app.vault.getFileByPath(`${oldpath}.sidecar.md`);
+
+            if (sidecar) {
+                this.app.fileManager.renameFile(sidecar, `${file.path}.sidecar.md`).then(() => {});
+            }
+
+            if (!cacheFile) {
+                this.createMediaFile(file).then((mediaFile) => {
+                    if (mediaFile) {
+                        this.dispatchEvent(new CustomEvent("file-moved", { detail: {file: mediaFile, oldPath: oldpath} }));
+                    }
                 });
             }
-        });        
+
+        });      
     }
 
     /**
@@ -140,21 +139,34 @@ export default class MutationHandler extends EventTarget {
      * @param file The created file
      */
     public onFileCreated(file: TAbstractFile): void {
-        if (!(file instanceof TFile) || !this.plugin.settings.extensions.contains(file.extension)) return;
+        this.createMediaFile(file).then((mediaFile) => {
+            if (mediaFile) {
+                this.dispatchEvent(new CustomEvent("file-created", { detail: mediaFile }));
+            }
+        });
+    }
+
+    private async createMediaFile(file: TAbstractFile, sidecar: TFile | null = null): Promise<MediaFile | null> {
+        if (!(file instanceof TFile) || !this.plugin.settings.extensions.contains(file.extension)) return null;
+
+        // Make sure it is not already in the cache
+        if (await this.cache.getFile(file.path)) return null;
+
+        let mediaFile = null;
 
         switch (getMediaType(file.extension)) {
             case MediaTypes.Image:
-                MCImage.create(file, this.app).then(mediaFile => {
-                    this.cache.addFile(mediaFile).then(() => {});
-                    this.dispatchEvent(new CustomEvent("file-created", { detail: mediaFile }));
-                });
+                mediaFile = await MCImage.create(file, this.app);
                 break;
             case MediaTypes.Unknown:
-                MediaFile.create(file, this.app).then(mediaFile => {
-                    this.cache.addFile(mediaFile).then(() => {});
-                    this.dispatchEvent(new CustomEvent("file-created", { detail: mediaFile }));
-                });
+                mediaFile = await MediaFile.create(file, this.app);
                 break;
         }
+
+        if (mediaFile) {
+            await this.cache.addFile(mediaFile);
+        }
+
+        return mediaFile;
     }
 }

@@ -53,21 +53,21 @@
         };
     }
 
-    function onFileMoved(e: {file: MediaFile, oldPath: string}) {
-        let allFilesIndex = allItems.findIndex((item) => item.file.path === e.oldPath);
-        let itemsIndex = items.findIndex((item) => item.file.file.path === e.oldPath);
+    function onFileMoved(e: { detail: {file: MediaFile, oldPath: string} }) {
+        let allFilesIndex = allItems.findIndex((item) => item.file.path === e.detail.oldPath);
+        let itemsIndex = items.findIndex((item) => item.file.file.path === e.detail.oldPath);
 
-        query.testFile(e.file).then((res) => {
+        query.testFile(e.detail.file).then((res) => {
             if (res) {
                 if (allFilesIndex === -1) {
-                    allItems = [e.file, ...allItems];
+                    allItems = [e.detail.file, ...allItems];
                 } else {
-                    allItems[allFilesIndex] = e.file;
+                    allItems[allFilesIndex] = e.detail.file;
                 }
                 if (itemsIndex === -1) {
-                    items = [getDisplayItem(e.file), ...items];
+                    items = [getDisplayItem(e.detail.file), ...items];
                 } else {
-                    items[itemsIndex] = getDisplayItem(e.file);
+                    items[itemsIndex] = getDisplayItem(e.detail.file);
                 }
             }
             else {
@@ -85,6 +85,8 @@
     }
 
     function onNewFile(e: { detail: MediaFile }) {
+        // Check if the mediaFile is already in allItems or 
+
         if (query) {
             query.testFile(e.detail).then((res) => {
                 if (res) {

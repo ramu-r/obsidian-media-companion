@@ -28,6 +28,7 @@
 
     let editorObserver: MutationObserver;
     let title = "";
+    let invalidName = false;
 
     let renameDebounceTimeout: ReturnType<typeof setTimeout> | null = null;
     let fileEditDebounceTimeout: ReturnType<typeof setTimeout> | null = null;
@@ -39,10 +40,10 @@
     // @ts-ignore
     plugin.mutationHandler.addEventListener("sidecar-edited", onExternalEdit);
 
-    function onExternalRename(e: {file: MediaFile, oldPath: string}) {
-        if (e.oldPath === file?.file.path) {
-            file = e.file;
-            title = e.file.file.basename;
+    function onExternalRename(e: { detail: {file: MediaFile, oldPath: string}}) {
+        if (e.detail.oldPath === file?.file.path) {
+            file = e.detail.file;
+            title = e.detail.file.file.basename;
         }
     }
 
@@ -73,20 +74,23 @@
     function renameFile() {
         if (!file) return;
 
-
         let trimmed = title.trim();
         let parentPath = file.file.parent ? file.file.parent.path : "";
         let newFilePath = normalizePath(parentPath + "/" + trimmed + "." + file.file.extension);
 
         if (trimmed === file.file.basename) {
+            invalidName = false;
             return;
         } else if (ILLEGAL_FILENAMES.contains(trimmed) || trimmed.length === 0 || trimmed[trimmed.length - 1] === ".") {
             console.error("Illegal filename");
-        } else if (app.vault.getAbstractFileByPath(newFilePath)) {
+            invalidName = true;
+        } else if (app.vault.getAbstractFileByPathInsensitive(newFilePath)) {
             console.error("File already exists");
+            invalidName = true;
         } else {
             // Rename for the sidecar is managed already
-            app.vault.rename(file.file, newFilePath);
+            app.fileManager.renameFile(file.file, newFilePath);
+            invalidName = false;
         }
     }
 
@@ -115,6 +119,8 @@
         activeStore.file.subscribe(async (newFile) => {
             if (!newFile || !editorView) return; // If undefined, don't do anything
 
+            invalidName = false;
+
             if (editorObserver) {
                 editorObserver.disconnect();
             }
@@ -128,7 +134,7 @@
                 if (fileEditDebounceTimeout) {
                     clearTimeout(fileEditDebounceTimeout);
                 }
-                fileEditDebounceTimeout = setTimeout(saveFile, 1000);
+                fileEditDebounceTimeout = setTimeout(saveFile, 250);
             });
             editorObserver.observe(editorContainer, { childList: true, subtree: true, characterData: true });
 
@@ -159,10 +165,10 @@
             editorObserver.disconnect();
         }
 
-            // @ts-ignore
-            plugin.mutationHandler.removeEventListener("file-moved", onExternalRename);
-            // @ts-ignore
-            plugin.mutationHandler.removeEventListener("sidecar-edited", onExternalEdit);
+        // @ts-ignore
+        plugin.mutationHandler.removeEventListener("file-moved", onExternalRename);
+        // @ts-ignore
+        plugin.mutationHandler.removeEventListener("sidecar-edited", onExternalEdit);
 
 
         titleTextarea.removeEventListener("input", onTitleInput);
@@ -178,7 +184,10 @@
         <img src={app.vault.getResourcePath(file.file)} alt="{file.file.name}" class="media-companion-sidecar-image" />
     {/if}
     {/if}
-        <textarea class="media-companion-sidecar-title" bind:value={title} bind:this={titleTextarea} hidden="{!file}"></textarea>
+        <textarea class="media-companion-sidecar-title" class:media-companion-sidecar-title-invalid={invalidName} bind:value={title} bind:this={titleTextarea} hidden="{!file}"></textarea>
+    {#if invalidName}
+        <p class="media-companion-sidecar-title-message">Invalid filename</p>
+    {/if}
         <div bind:this={metadataContainer} hidden="{!file}" class="media-companion-sidecar-metadata"></div> 
         <div bind:this={editorContainer} hidden="{!file}" class="media-companion-sidecar-editor"></div>
 </div>
@@ -192,6 +201,23 @@
         border: none;
         resize: none;
         field-sizing: content;
+    }
+
+    :global(.media-companion-sidecar-title-invalid) {
+        border: 1px solid red;
+        color: red;
+    }
+
+    :global(.media-companion-sidecar-title-invalid:active) {
+        border: 1px solid red;
+        color: red;
+    }
+
+    :global(.media-companion-sidecar-title-message) {
+        color: red;
+        text-align: center;
+        padding: 0;
+        margin: 0;
     }
 
     :global(.media-companion-sidecar-container) {

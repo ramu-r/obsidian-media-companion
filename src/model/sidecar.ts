@@ -1,4 +1,7 @@
 import type { App, TFile } from "obsidian";
+import type { FileExplorerLeaf } from "obsidian-typings";
+import pluginStore from "src/stores/pluginStore";
+import { get } from "svelte/store";
 
 /** 
  * Represents a sidecar file for a media file
@@ -16,13 +19,13 @@ export default class Sidecar {
      * @param app The app instance
      * @returns The created sidecar
      */
-    public static async create(mediaFile: TFile, app: App): Promise<Sidecar> {
+    public static async create(mediaFile: TFile, app: App, f: TFile | null = null): Promise<Sidecar> {
         let file = new Sidecar();
         
         file.mediaFile = mediaFile;
         file.app = app;
 
-        await file.fill();
+        await file.fill(f);
 
         return file;
     }
@@ -32,9 +35,13 @@ export default class Sidecar {
      * @param file The media file to use for filling
      * @param app The app instance
      */
-    protected async fill() {
-        this.file = await this.createIfNotExists();
-        await this.hide();
+    protected async fill(f: TFile | null = null): Promise<void> {
+        if (f) {
+            this.file = f;
+        } else {
+            this.file = await this.createIfNotExists();
+        }
+        this.hideInAll();
     }
 
     /**
@@ -45,18 +52,25 @@ export default class Sidecar {
     private async createIfNotExists(): Promise<TFile> {
         let file = this.app.vault.getFileByPath(`${this.mediaFile.path}.sidecar.md`) ?? 
             await this.app.vault.create(`${this.mediaFile.path}.sidecar.md`, "");
-
+        
         return file;
     }
 
-    private async hide(): Promise<void> {
-        const explorer = this.app.workspace.getLeavesOfType("file-explorer")?.first()
-        if (!explorer) return;
+    private async hideInAll(): Promise<void> {
+        let leaves = this.app.workspace.getLeavesOfType("file-explorer");
+
+        for (let leaf of leaves) {
+            await this.hide(leaf);
+        }
+    }
+
+    public async hide(leaf: FileExplorerLeaf): Promise<void> {
+        if (!leaf) return;
         // @ts-ignore
-        if (!explorer.view?.fileItems) return;
-        const element = explorer.view?.fileItems[this.file.path]?.el;
+        if (!leaf.view?.fileItems) return;
+        const element = leaf.view?.fileItems[this.file.path]?.el;
         if (!element) return;
-        element.hidden = true;
+        element.hidden = get(pluginStore.plugin).settings.hideSidecar;
     }
 
     /**

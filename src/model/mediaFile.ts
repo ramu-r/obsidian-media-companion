@@ -1,4 +1,4 @@
-import type { App, TFile } from "obsidian";
+import { TFile, type App } from "obsidian";
 import Sidecar from "./sidecar";
 import { getMediaType, type MediaTypes } from "./types/mediaTypes";
 
@@ -17,10 +17,10 @@ export default class MediaFile {
      * @param app The app instance
      * @returns The created MediaFile
      */
-    public static async create(file: TFile, app: App): Promise<MediaFile> {
+    public static async create(file: TFile, app: App, sidecar: TFile | null = null): Promise<MediaFile> {
         let f = new MediaFile();
 
-        await MediaFile.fill(f, file, app);
+        await MediaFile.fill(f, file, app, sidecar);
 
         return f;
     }
@@ -31,11 +31,11 @@ export default class MediaFile {
      * @param file The related binary file
      * @param app The app instance
      */
-    protected static async fill(f: MediaFile, file: TFile, app: App): Promise<void> {
+    protected static async fill(f: MediaFile, file: TFile, app: App, sidecar: TFile | null = null): Promise<void> {
         f.file = file;
         f.app = app;
-        
-        f.sidecar = await Sidecar.create(file, app);
+
+        f.sidecar = await Sidecar.create(file, app, sidecar);
 
         await f.update();
     }

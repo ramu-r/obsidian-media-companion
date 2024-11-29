@@ -33,6 +33,24 @@ export default class MediaCompanion extends Plugin {
 
 			this.mutationHandler.initializeEvents();
 
+			this.registerEvent(this.app.workspace.on("layout-change", async () => {
+				const explorers = this.app.workspace.getLeavesOfType("file-explorer");
+				for (let explorer of explorers) {
+					await this.cache.hideAll(explorer);
+				}
+			}));
+
+			this.registerEvent(this.app.workspace.on("file-open", async (file) => {
+				if (file) {
+					if (this.settings.extensions.contains(file.extension)) {
+						let mediaFile = await this.cache.getFile(file.path);
+						if (mediaFile) {
+							activeStore.file.set(mediaFile);
+						}
+					}
+				}
+			}));
+
 			// @ts-ignore - Need to set this manually, unsure if there's a better way
 			this.app.metadataTypeManager.properties[MediaFile.last_updated_tag.toLowerCase()].type = "datetime";
 		});
