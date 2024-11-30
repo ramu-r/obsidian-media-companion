@@ -75,7 +75,7 @@ export default class MutationHandler extends EventTarget {
             }
         });
 
-        if (!this.plugin.settings.extensions.contains(file.extension)) return;
+        if (!this.plugin.settings.extensions.contains(file.extension.toLowerCase())) return;
 
         // get the file
         this.cache.getFile(file.path).then(f => {
@@ -114,7 +114,7 @@ export default class MutationHandler extends EventTarget {
             }
         });
 
-        if (!this.plugin.settings.extensions.contains(file.extension)) return;
+        if (!this.plugin.settings.extensions.contains(file.extension.toLowerCase())) return;
 
         this.cache.getFile(file.path).then((cacheFile) => {
             let sidecar = this.app.vault.getFileByPath(`${oldpath}.sidecar.md`);
@@ -147,7 +147,7 @@ export default class MutationHandler extends EventTarget {
     }
 
     private async createMediaFile(file: TAbstractFile, sidecar: TFile | null = null): Promise<MediaFile | null> {
-        if (!(file instanceof TFile) || !this.plugin.settings.extensions.contains(file.extension)) return null;
+        if (!(file instanceof TFile) || !this.plugin.settings.extensions.contains(file.extension.toLowerCase())) return null;
 
         // Make sure it is not already in the cache
         if (await this.cache.getFile(file.path)) return null;

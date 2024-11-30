@@ -15,6 +15,7 @@ export enum OrderByOptions {
 export type QueryDetails = {
     color: null | HexString, // null | HexString
     folders: string[], // string[], if length == 0, all folders (formatted 'path/to/folder')
+    name: string, // string, if empty, all names
     tags: string[], // string[], if length == 0, all tags (formatted 'abc')
     fileTypes: string[], // string[], if length == 0, all file types (formatted 'png')
     shape: Shape[], // shapes[], if length == 0, all shapes
@@ -48,6 +49,7 @@ export default class Query {
     public static readonly defaultQuery: QueryDetails = {
         color: null,
         folders: [],
+        name: "",
         tags: [],
         fileTypes: [],
         shape: [],
@@ -120,6 +122,10 @@ export default class Query {
                 // TODO: This is a bit more complicated. We want to do
                 // distance checking here...
             }
+        }
+
+        if (this.query.name.length > 0) {
+            if (!item.file.basename.toLowerCase().includes(this.query.name.toLowerCase())) return false;
         }
 
         // Folders...

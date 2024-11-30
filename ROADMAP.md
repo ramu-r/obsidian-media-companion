@@ -20,7 +20,9 @@ Everything needed for a minimal viable product. In general, this means: Cleaning
 - [x] Show a notice with updates when a lot of new files have been detected; Show progress for feature extraction
 - [x] Add icons to windows
 - [ ] Allow searching in the gallery
+- [ ] Make the gallery fit nicely again...
 - [x] Update file type, add to settings
+- [x] Fix some jank with the sidecar file saving and being loaded in
 - [ ] Make the gallery responsive
 - [ ] Make sure things work on mobile
 - [ ] Write test cases, perform them

@@ -47,7 +47,7 @@ export default class Cache {
 
         let total_files = files.length;
 
-        files = files.filter(f => this.plugin.settings.extensions.contains(f.extension));
+        files = files.filter(f => this.plugin.settings.extensions.contains(f.extension.toLowerCase()));
 
         console.log(
             `%c[Media Companion]: %cBuilding cache with ${files.length} media files found of ${total_files} files total \n                   If this is the first time, this may take a while`, 

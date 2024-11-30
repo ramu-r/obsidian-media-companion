@@ -2,14 +2,15 @@
 	import { onDestroy, onMount, tick } from "svelte";
     import type MediaCompanion from "main";
 	import pluginStore from "src/stores/pluginStore";
-	import Query from "src/query";
+	import Query, { OrderByOptions, type QueryDetails } from "src/query";
 	import { get } from "svelte/store";
-	import type { App } from "obsidian";
+	import { normalizePath, type App } from "obsidian";
 	import appStore from "src/stores/appStore";
     import Masonry from "masonry-layout";
 	import type MediaFile from "src/model/mediaFile";
     import imagesLoaded from "imagesloaded";
 	import activeStore from "src/stores/activeStore";
+	import type { Shape } from "src/model/types/shape";
 
     let plugin: MediaCompanion = get(pluginStore.plugin);
     let app: App = get(appStore.app);
@@ -20,6 +21,16 @@
         uri: string;
         file: MediaFile;
     }
+
+    let searchDebounce: ReturnType<typeof setTimeout> | null = null;
+    let searchColor: string = "";
+    let searchFolders: string = "";
+    let searchName: string = "";
+    let searchTags: string = "";
+    let searchFileTypes: string = "";
+    let searchShapes: Shape[] = [];
+    let orderBy: OrderByOptions = OrderByOptions.name;
+    let orderIncreasing: boolean = true;
 
     let masonry: Masonry;
     let masonryContainer: HTMLDivElement;
@@ -243,11 +254,55 @@
     function onFileClicked(file: MediaFile) {
         activeStore.file.set(file);
     }
+
+    function onSearchChange() {
+        // Debounce search
+        if (searchDebounce) clearTimeout(searchDebounce);
+
+        console.log(orderIncreasing);
+
+        searchDebounce = setTimeout(async () => {
+            items = [];
+            currentGroup = 0;
+            query = new Query(plugin.cache, {
+                color: searchColor,
+                folders: searchFolders.split(",").map((folder) => normalizePath(folder.trim())).filter((folder) => folder !== "" && folder !== "/"),
+                name: searchName,
+                tags: searchTags.split(",").map((tag) => tag.trim()).filter((tag) => tag !== ""),
+                fileTypes: searchFileTypes.split(",").map((fileType) => fileType.trim()).filter((fileType) => fileType !== ""),
+                shape: searchShapes,
+                dimensions: null, 
+                orderBy: {
+                    option: orderBy,
+                    value: ""
+                },
+                orderIncreasing: orderIncreasing,
+                hasFrontMatter: []
+            });
+            allItems = await query.getItems();
+            await loadNextGroup();
+        }, 300);
+    }
 </script>
 
+<div class="media-companion-gallery-view-container">
 {#await plugin.cache.initialize()}
     <h1 class="media-companion-gallery-loading">Loading cache...</h1>
 {:then}
+<div class="media-companion-gallery-search">
+    <input type="color" name="Color" bind:value={searchColor} on:input={onSearchChange}>
+    <input type="text" placeholder="Name" bind:value={searchName} on:input={onSearchChange}>
+    <input type="text" placeholder="Folders" bind:value={searchFolders} on:input={onSearchChange}>
+    <input type="text" placeholder="Tags" bind:value={searchTags} on:input={onSearchChange}>
+    <input type="text" placeholder="File types" bind:value={searchFileTypes} on:input={onSearchChange}>
+    <select bind:value={orderBy} on:change={onSearchChange}>
+        {#each Object.values(OrderByOptions) as option}
+            <option value={option}>{option}</option>
+        {/each}
+    </select>
+    <input type="checkbox" bind:checked={orderIncreasing} on:change={onSearchChange}>
+</div>
+<hr class="media-companion-gallery-search-hr">
 <div class="gallery-container" bind:this={scrollContainer}>
     <div class="gallery-masonry" bind:this={masonryContainer}>
         {#each items as item}
@@ -258,11 +313,22 @@
     </div>
 </div>
 {/await}
+</div>
 
 <style>
+    :global(.media-companion-gallery-view-container) {
+        display: flex;
+        flex-direction: column;
+        height: 100%;
+    }
+
     :global(.gallery-masonry) {
         display: block;
         width: 100%;
+    }
+
+    :global(.media-companion-gallery-search-hr) {
+        margin: 4px;
     }
 
     :global(.media-companion-gallery-loading) {
@@ -272,8 +338,8 @@
     :global(.gallery-container) {
         display: flex;
         justify-content: center;
-        max-height: 100%;
         overflow: scroll;
+        flex-grow: 1;
     }
 
     :global(button.gallery-item) {

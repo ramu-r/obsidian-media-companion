@@ -34,6 +34,7 @@
     let fileEditDebounceTimeout: ReturnType<typeof setTimeout> | null = null;
 
     let fileContent: string = "";
+    let fileContentLastEdited: number = 0;
 
     // @ts-ignore
     plugin.mutationHandler.addEventListener("file-moved", onExternalRename);
@@ -50,13 +51,12 @@
     function onExternalEdit(e: {detail: MediaFile}) {
         if (e.detail === file) {
             if (editorView) {
+                if (fileContentLastEdited + 500 > e.detail.sidecar.file.stat.mtime) return;
                 app.vault.read(e.detail.sidecar.file).then((content) => {
                     if (editorView) {
                         if (content === editorView.data) return;
-                        editorObserver.disconnect();
                         editorView.set(content, true);
                         fileContent = content;
-                        editorObserver.observe(editorContainer, { childList: true, subtree: true, characterData: true });
                     }
                 });
             }
@@ -130,6 +130,8 @@
             title = newFile.file.basename;
 
             editorObserver = new MutationObserver(() => {
+                fileContentLastEdited = Date.now();
+
                 // Needs debouncing
                 if (fileEditDebounceTimeout) {
                     clearTimeout(fileEditDebounceTimeout);

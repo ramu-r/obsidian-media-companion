@@ -58,7 +58,7 @@ export default class MediaCompanion extends Plugin {
 
 		this.registerEvent(this.app.workspace.on("file-open", async (file) => {
 			if (file) {
-				if (this.settings.extensions.contains(file.extension)) {
+				if (this.settings.extensions.contains(file.extension.toLowerCase())) {
 					let mediaFile = await this.cache.getFile(file.path);
 					if (mediaFile) {
 						activeStore.file.set(mediaFile);
@@ -152,7 +152,12 @@ class MediaCompanionSettingTab extends PluginSettingTab {
 				.setPlaceholder('jpg, png, gif')
 				.setValue(this.plugin.settings.extensions.join(', '))
 				.onChange(async (value) => {
-					this.plugin.settings.extensions = value.split(',').map((ext) => ext.trim());
+					this.plugin.settings.extensions = value.split(',')
+						.map((ext) => ext.trim())
+						.map((ext) => ext.replace('.', ''))
+						.filter((ext) => ext.length > 0)
+						.map((ext) => ext.toLowerCase())
+						.filter((ext) => ext !== 'md');
 					await this.plugin.saveSettings();
 				}));
 	}
