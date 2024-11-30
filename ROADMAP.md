@@ -15,11 +15,18 @@ Everything needed for a minimal viable product. In general, this means: Cleaning
 - [x] Remove sidecar files from the graph view - possibly add sidecar tag to file - Not necessary, people can filter them themselves
 - [x] Update gallery to use own system. The current system is quite broken
 - [x] Make file rename red when file can't be renamed to given name
-- [ ] Show a modal with updates when a lot of new files have been detected; Show progress for feature extraction
+- [x] Open sidecar window on correct moments
+- [x] Fix issue with observer when window is initially closed
+- [x] Show a notice with updates when a lot of new files have been detected; Show progress for feature extraction
+- [x] Add icons to windows
 - [ ] Allow searching in the gallery
+- [x] Update file type, add to settings
 - [ ] Make the gallery responsive
 - [ ] Make sure things work on mobile
 - [ ] Write test cases, perform them
+- [ ] Use the right embedding system to embed files...
+- [ ] Lint everything
+- [ ] Make code more readable
 
 ## File types
 
@@ -28,7 +35,7 @@ Supporting more file types is the next step. Mainly, these are the things being 
 - [ ] Video / animated files. Mp4, gif 
 - [ ] Audio files. mp3, wav, etc.
 - [ ] 3d files. obj, gltf - incl. embedding
-- [ ] Wonderdraft and dungeondraft files - incl. embedding
+- [ ] Wonderdraft and dungeondraft files - incl. embedding. Doesn't actually seem possible due to the file format...
 
 ## Performance
 

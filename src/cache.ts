@@ -54,6 +54,10 @@ export default class Cache {
             "color: #00b7eb", "color: inherit"
         );
 
+        let notice = new Notice(`Building cache with ${files.length} media files found of ${total_files} files total\nProcessing may take a while if many new files have been added`, 0);	
+
+        let total_done = 0;
+
         for (let file of files) {
             let mediaFile;
 
@@ -68,7 +72,12 @@ export default class Cache {
             }
                 
             await this.addFile(mediaFile);
+
+            total_done++;
+            notice.setMessage(`Media Companion: ${total_done}/${files.length} files processed\nProcessing may take a while if many new files have been added`);
         }
+
+        notice.hide();
 
         console.log(
             `%c[Media Companion]: %cFinished building cache in ${(Date.now() - timer) / 1000}s, ${this.files.length} files in cache`, 

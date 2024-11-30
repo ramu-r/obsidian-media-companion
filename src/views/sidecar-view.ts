@@ -12,22 +12,26 @@ export class SidecarView extends ItemView {
     super(leaf);
   }
 
-  getViewType() {
+  public getViewType() {
     return VIEW_TYPE_SIDECAR;
   }
 
-  getDisplayText() {
+  public getDisplayText() {
     return "Sidecar";
   }
 
-  async onOpen() {
+  public getIcon() {
+    return "image";
+  }
+
+  public async onOpen() {
     this.component = new Sidecar({
       target: this.contentEl,
       props: { },
     });
   }
 
-  async onClose() {
+  public async onClose() {
     if (this.component) {
       this.component.$destroy();
     }

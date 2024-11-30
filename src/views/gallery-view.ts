@@ -21,6 +21,10 @@ export class GalleryView extends ItemView {
     return "Gallery view";
   }
 
+  public getIcon() {
+    return "image";
+  }
+
   public async onOpen() {
     this.component = new Gallery({
       target: this.contentEl,
