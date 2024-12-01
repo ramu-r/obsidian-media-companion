@@ -290,7 +290,8 @@
     <h1 class="media-companion-gallery-loading">Loading cache...</h1>
 {:then}
 <div class="media-companion-gallery-search">
-    <input type="color" name="Color" bind:value={searchColor} on:input={onSearchChange}>
+    <input type="color" name="Color" bind:value={searchColor} on:input={onSearchChange}> 
+	<button on:click={()=>{searchColor = ""; onSearchChange()}}>x</button>
     <input type="text" placeholder="Name" bind:value={searchName} on:input={onSearchChange}>
     <input type="text" placeholder="Folders" bind:value={searchFolders} on:input={onSearchChange}>
     <input type="text" placeholder="Tags" bind:value={searchTags} on:input={onSearchChange}>

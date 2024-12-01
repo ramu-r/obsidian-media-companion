@@ -119,8 +119,59 @@ export default class Query {
             }
 
             if (this.query.color) {
-                // TODO: This is a bit more complicated. We want to do
-                // distance checking here...
+				// From: https://gist.github.com/vahidk/05184faf3d92a0aa1b46aeaa93b07786
+				// No attribution required, but here it is anyway
+				function rgbToHsl(r: number, g: number, b: number): [number, number, number] {
+					r /= 255; g /= 255; b /= 255;
+					let max = Math.max(r, g, b);
+					let min = Math.min(r, g, b);
+					let d = max - min;
+					let h: number = 0;
+					if (d === 0) h = 0;
+					else if (max === r) h = (g - b) / d % 6;
+					else if (max === g) h = (b - r) / d + 2;
+					else if (max === b) h = (r - g) / d + 4;
+					let l = (min + max) / 2;
+					let s = d === 0 ? 0 : d / (1 - Math.abs(2 * l - 1));
+					return [h * 60, s, l];
+				}
+
+                // Extract RGB values from the color hex string
+				let color = this.query.color;
+				let r = parseInt(color.substring(1, 3), 16);
+				let g = parseInt(color.substring(3, 5), 16);
+				let b = parseInt(color.substring(5, 7), 16);
+
+				let hsl = rgbToHsl(r, g, b);
+
+				let h = hsl[0];
+				let s = hsl[1];
+				let l = hsl[2];				
+
+				let distance = 0;
+
+				let colors = await image.getCachedColors()
+
+				if (!colors) return false;
+				if (colors.length === 0) return false;
+				
+				for (let color of colors) {
+					let colorHsl = rgbToHsl(color.red, color.green, color.blue);
+
+					// Handle hue wrap around
+					// In HSL, the hue is a value from 0 to 360
+					// where in practice, 0 and 360 are the same
+					// Imagine them as a circle, where 0 and 360 degrees are the same point
+					let hDiff = Math.min(Math.abs(colorHsl[0] - h), Math.abs(colorHsl[0] - h + 360));
+					let sDiff = Math.abs(colorHsl[1] - s);
+					let lDiff = Math.abs(colorHsl[2] - l);
+
+					// Completely arbitrary, might want to tweak
+					distance += (hDiff / 180 + sDiff + lDiff) * color.area;
+				}
+
+				// Completely arbitrary, might want to tweak
+				if (distance > 0.5) return false;
             }
         }
 
