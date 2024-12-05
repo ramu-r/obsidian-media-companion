@@ -2,15 +2,16 @@
 	import { onDestroy, onMount, tick } from "svelte";
     import type MediaCompanion from "main";
 	import pluginStore from "src/stores/pluginStore";
-	import Query, { OrderByOptions, type QueryDetails } from "src/query";
+	import Query, { OrderByOptions } from "src/query";
 	import { get } from "svelte/store";
-	import { normalizePath, type App } from "obsidian";
+	import { type App } from "obsidian";
 	import appStore from "src/stores/appStore";
     import Masonry from "masonry-layout";
 	import type MediaFile from "src/model/mediaFile";
     import imagesLoaded from "imagesloaded";
 	import activeStore from "src/stores/activeStore";
 	import type { Shape } from "src/model/types/shape";
+	import SuggestInput from "./SuggestInput.svelte";
 
     let plugin: MediaCompanion = get(pluginStore.plugin);
     let app: App = get(appStore.app);
@@ -24,13 +25,14 @@
 
     let searchDebounce: ReturnType<typeof setTimeout> | null = null;
     let searchColor: string = "";
-    let searchFolders: string = "";
-    let searchName: string = "";
-    let searchTags: string = "";
-    let searchFileTypes: string = "";
+    let searchFolders: string[] = [];
+    let searchTags: string[] = [];
+    let searchFileTypes: string[] = [];
     let searchShapes: Shape[] = [];
     let orderBy: OrderByOptions = OrderByOptions.name;
     let orderIncreasing: boolean = true;
+
+	let isCollapsed: boolean = false;
 
     let masonry: Masonry;
     let masonryContainer: HTMLDivElement;
@@ -56,6 +58,10 @@
     plugin.mutationHandler.addEventListener("file-moved", onFileMoved);
     // @ts-ignore
     plugin.mutationHandler.addEventListener("sidecar-edited", onFileChanged);
+
+	function toggleCollapse() {
+		isCollapsed = !isCollapsed;
+	}
 
     function getDisplayItem(file: MediaFile): DisplayItem {
         return {
@@ -153,6 +159,10 @@
                 // adjust the masonry layout to fit the new image sizes
                 reloadMasonry();
                 reloadMasonry();
+
+				if (!isScrollbarVisible()) {
+					loadNextGroup().then(() => {});
+				}
             }, 50);
         }
     }
@@ -222,8 +232,9 @@
 
         masonry = new Masonry(masonryContainer, {
             transitionDuration: 0, // Turn off animations; Looks weird when adding items
+			columnWidth: ".gallery-sizer",
             itemSelector: ".gallery-item",
-            fitWidth: true,
+            //fitWidth: true,
         });
 
         await loadNextGroup();
@@ -259,17 +270,15 @@
         // Debounce search
         if (searchDebounce) clearTimeout(searchDebounce);
 
-        console.log(orderIncreasing);
-
         searchDebounce = setTimeout(async () => {
             items = [];
             currentGroup = 0;
             query = new Query(plugin.cache, {
                 color: searchColor,
-                folders: searchFolders.split(",").map((folder) => normalizePath(folder.trim())).filter((folder) => folder !== "" && folder !== "/"),
-                name: searchName,
-                tags: searchTags.split(",").map((tag) => tag.trim()).filter((tag) => tag !== ""),
-                fileTypes: searchFileTypes.split(",").map((fileType) => fileType.trim()).filter((fileType) => fileType !== ""),
+                folders: searchFolders,
+                name: "",
+                tags: searchTags.map(tag => tag.startsWith('#') ? tag.slice(1) : tag),
+                fileTypes: searchFileTypes,
                 shape: searchShapes,
                 dimensions: null, 
                 orderBy: {
@@ -281,6 +290,7 @@
             });
             allItems = await query.getItems();
             await loadNextGroup();
+			reloadMasonry();
         }, 300);
     }
 </script>
@@ -289,23 +299,51 @@
 {#await plugin.cache.initialize()}
     <h1 class="media-companion-gallery-loading">Loading cache...</h1>
 {:then}
-<div class="media-companion-gallery-search">
-    <input type="color" name="Color" bind:value={searchColor} on:input={onSearchChange}> 
-	<button on:click={()=>{searchColor = ""; onSearchChange()}}>x</button>
-    <input type="text" placeholder="Name" bind:value={searchName} on:input={onSearchChange}>
-    <input type="text" placeholder="Folders" bind:value={searchFolders} on:input={onSearchChange}>
-    <input type="text" placeholder="Tags" bind:value={searchTags} on:input={onSearchChange}>
-    <input type="text" placeholder="File types" bind:value={searchFileTypes} on:input={onSearchChange}>
-    <select bind:value={orderBy} on:change={onSearchChange}>
-        {#each Object.values(OrderByOptions) as option}
-            <option value={option}>{option}</option>
-        {/each}
-    </select>
-    <input type="checkbox" bind:checked={orderIncreasing} on:change={onSearchChange}>
+<div class="media-companion-gallery-search collapsible" class:collapsed={isCollapsed}>
+
+	<div class="media-companion-gallery-properties">
+		<div class="left-section">
+			<input type="color" name="Color" bind:value={searchColor} on:input={onSearchChange}>
+			<button on:click={()=>{searchColor = ""; onSearchChange()}} class="media-companion-clear-btn">&times;</button>
+		</div>
+		<div class="right-section">
+			<label for="orderBy" class="sort-label">Sort by:</label>
+			<select bind:value={orderBy} on:change={onSearchChange}>
+				{#each Object.values(OrderByOptions) as option}
+					<option value={option}>{option.replace(/([A-Z])/g, ' $1').toLowerCase().replace(/^./, str => str.toUpperCase())}</option>
+				{/each}
+			</select>
+			<button class="sort-toggle" on:click={() => { onSearchChange(); orderIncreasing = !orderIncreasing; }}>
+				<i class={orderIncreasing ? 'up' : 'down'}></i>
+			</button>
+		</div>
+	</div>	
+	<SuggestInput 
+		selected={searchFolders}
+		autoComplete={app.vault.getAllFolders().map(folder => folder.path)} 
+		labelText={"Folders"} 
+		onChange={onSearchChange}
+		/>
+	<SuggestInput
+		selected={searchTags}
+		autoComplete={Object.keys(app.metadataCache.getTags())}
+		labelText={"Tags"}
+		onChange={onSearchChange}
+		/>
+	<SuggestInput
+		selected={searchFileTypes}
+		autoComplete={plugin.settings.extensions}
+		labelText={"File types"}
+		onChange={onSearchChange}
+		/>
 </div>
 <hr class="media-companion-gallery-search-hr">
+<button on:click={toggleCollapse} class="media-companion-collapse-button">
+	{isCollapsed ? "⮟" : "⮝"}
+</button>
 <div class="gallery-container" bind:this={scrollContainer}>
     <div class="gallery-masonry" bind:this={masonryContainer}>
+		<div class="gallery-sizer"></div>
         {#each items as item}
             <button class="gallery-item" on:click={() => onFileClicked(item.file)}>
                 <img src={item.uri} alt={item.file.file.name} loading="lazy" />
@@ -317,11 +355,89 @@
 </div>
 
 <style>
+	:global(.media-companion-collapse-button) {
+		display: inline-block;
+		position: relative;
+		width: auto;
+		margin-left: auto;
+		margin-right: 0;
+		z-index: calc(var(--layer-notice) - 1);
+	}
+
+	:global(.media-companion-gallery-properties) {
+    	display: flex;
+    	justify-content: space-between;
+    	align-items: center;
+    	width: 100%;
+		padding: 5px;
+	}
+
+	:global(.left-section) {
+	    display: flex;
+	    align-items: center;
+	}
+
+	:global(.left-section input[type="color"]) {
+	    margin-right: 8px;
+	    vertical-align: middle;
+	}
+
+	:global(.media-companion-gallery-properties .media-companion-clear-btn) {
+	    background: none;
+	    border: none;
+	    font-size: 16px;
+	    padding: 0;
+	    cursor: pointer;
+		box-shadow: none;
+	}
+
+	:global(.right-section) {
+	    display: flex;
+	    align-items: center;
+	}
+
+	:global(.right-section label) {
+	    margin-right: 10px;
+	}
+
+	:global(.right-section select) {
+	    margin-right: 10px;
+	}
+
+	:global(.sort-toggle) {
+	    cursor: pointer;
+	}
+
+	:global(.sort-toggle i) {
+	    font-size: 16px;
+	}
+
+	.sort-toggle .up::before {
+	    content: "↑"; /* Up arrow */
+	}
+
+	.sort-toggle .down::before {
+	    content: "↓"; /* Down arrow */
+	}
+
+	:global(.collapsible) {
+		transition: all 1s ease
+	}
+
+	:global(.collapsed) {
+		height: 1px;
+		overflow: hidden; 
+	}
+
     :global(.media-companion-gallery-view-container) {
         display: flex;
         flex-direction: column;
         height: 100%;
     }
+
+	:global(.gallery-sizer) {
+		width: 20%;
+	}
 
     :global(.gallery-masonry) {
         display: block;
@@ -337,10 +453,14 @@
     }
 
     :global(.gallery-container) {
+		top: -1em;
+		position: relative;
         display: flex;
+		width: 100%;
         justify-content: center;
         overflow: scroll;
         flex-grow: 1;
+		padding: 0 !important;
     }
 
     :global(button.gallery-item) {

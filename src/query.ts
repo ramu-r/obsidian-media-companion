@@ -168,10 +168,11 @@ export default class Query {
 
 					// Completely arbitrary, might want to tweak
 					distance += (hDiff / 180 + sDiff + lDiff) * color.area;
-				}
 
-				// Completely arbitrary, might want to tweak
-				if (distance > 0.5) return false;
+					// Completely arbitrary, might want to tweak
+					// Break out in the for loop so we don't compute more than we need to
+					if (distance > 0.5) return false;
+				}				
             }
         }
 
