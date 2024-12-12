@@ -196,7 +196,7 @@
 
         // Small timeout to prevent loading everything instantly
         // Also needed for `isScrollbarVisible` to work correctly
-        await new Promise((resolve) => setTimeout(resolve, 100));
+        await new Promise((resolve) => setTimeout(resolve, 50));
 
         if (!isScrollbarVisible()) {
             await loadNextGroup();
