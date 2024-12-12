@@ -12,6 +12,7 @@
 	import activeStore from "src/stores/activeStore";
 	import type { Shape } from "src/model/types/shape";
 	import SuggestInput from "./SuggestInput.svelte";
+	import MediaFileEmbed from "./MediaFileEmbed.svelte"
 
     let plugin: MediaCompanion = get(pluginStore.plugin);
     let app: App = get(appStore.app);
@@ -22,6 +23,8 @@
         uri: string;
         file: MediaFile;
     }
+
+    let elementSize: number = 200;
 
     let searchDebounce: ReturnType<typeof setTimeout> | null = null;
     let searchColor: string = "";
@@ -234,7 +237,7 @@
             transitionDuration: 0, // Turn off animations; Looks weird when adding items
 			columnWidth: ".gallery-sizer",
             itemSelector: ".gallery-item",
-            //fitWidth: true,
+            fitWidth: true,
         });
 
         await loadNextGroup();
@@ -300,12 +303,14 @@
     <h1 class="media-companion-gallery-loading">Loading cache...</h1>
 {:then}
 <div class="media-companion-gallery-search collapsible" class:collapsed={isCollapsed}>
-
 	<div class="media-companion-gallery-properties">
 		<div class="left-section">
 			<input type="color" name="Color" bind:value={searchColor} on:input={onSearchChange}>
 			<button on:click={()=>{searchColor = ""; onSearchChange()}} class="media-companion-clear-btn">&times;</button>
 		</div>
+        <div class="center-section">
+            - <input type="range" bind:value={elementSize} min="100" max="500" on:input={() => reloadMasonry()}> +
+        </div>
 		<div class="right-section">
 			<label for="orderBy" class="sort-label">Sort by:</label>
 			<select bind:value={orderBy} on:change={onSearchChange}>
@@ -343,10 +348,10 @@
 </button>
 <div class="gallery-container" bind:this={scrollContainer}>
     <div class="gallery-masonry" bind:this={masonryContainer}>
-		<div class="gallery-sizer"></div>
+		<div class="gallery-sizer" style="width: {elementSize}px;"></div>
         {#each items as item}
-            <button class="gallery-item" on:click={() => onFileClicked(item.file)}>
-                <img src={item.uri} alt={item.file.file.name} loading="lazy" />
+            <button class="gallery-item" style="width: {elementSize}px;" on:click={() => onFileClicked(item.file)}>
+				<MediaFileEmbed file={item.file.file} />
             </button>
         {/each}
     </div>
@@ -381,6 +386,11 @@
 	    margin-right: 8px;
 	    vertical-align: middle;
 	}
+
+    :global(.center-section) {
+        display: flex;
+        align-items: center;
+    }
 
 	:global(.media-companion-gallery-properties .media-companion-clear-btn) {
 	    background: none;
@@ -435,10 +445,6 @@
         height: 100%;
     }
 
-	:global(.gallery-sizer) {
-		width: 20%;
-	}
-
     :global(.gallery-masonry) {
         display: block;
         width: 100%;
@@ -465,18 +471,17 @@
 
     :global(button.gallery-item) {
         all: unset;
-        padding: 5px;
-        width: 20%;
+        padding: 0px;
+        /* width: 20%; */
         box-sizing: border-box;
     }
 
-    :global(.gallery-item:focus img) {
-        outline: 2px solid white;
-    }
+	:global(.gallery-item div) {
+		border: 2px solid #00000000;
+	}
 
-    :global(.gallery-item img) {
-        width: 100%;
-        height: auto;
-        display: block;
+    :global(.gallery-item:focus div) {
+		border: 2px solid var(--interactive-accent);
+		border-radius: 2px;
     }
 </style>

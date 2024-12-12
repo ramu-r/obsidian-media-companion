@@ -1,13 +1,14 @@
 <script lang="ts">
     import { onDestroy, onMount } from "svelte";
 	import type MediaFile from "src/model/mediaFile";
-    import { normalizePath, TAbstractFile, TFile, type App } from "obsidian";
+    import { normalizePath, TFile, type App } from "obsidian";
     import { get } from "svelte/store";
 	import appStore from "src/stores/appStore";
     import activeStore from "src/stores/activeStore";
 	import type { WidgetEditorView } from "obsidian-typings";
 	import type MediaCompanion from "main";
 	import pluginStore from "src/stores/pluginStore";
+	import MediaFileEmbed from "./MediaFileEmbed.svelte";
 
     // Things that need to be done:
     // - Frontmatter editing, if possible
@@ -183,7 +184,7 @@
         <h3 class="media-companion-sidecar-nofile">No file selected</h3>
     {:else}
     {#if file.file}
-        <img src={app.vault.getResourcePath(file.file)} alt="{file.file.name}" class="media-companion-sidecar-image" />
+        <MediaFileEmbed file={file.file} />
     {/if}
     {/if}
         <textarea class="media-companion-sidecar-title" class:media-companion-sidecar-title-invalid={invalidName} bind:value={title} bind:this={titleTextarea} hidden="{!file}"></textarea>
