@@ -28,10 +28,10 @@ Everything needed for a minimal viable product. In general, this means: Cleaning
 - [x] Use the right embedding system to embed files...
 - [x] Fix saving stuff - When someone clicks on a new file fast - https://docs.obsidian.md/Reference/TypeScript+API/debounce, https://docs.obsidian.md/Reference/TypeScript+API/Debouncer/run
 - [x] Resolve lag when switching tab - Likely due to the gallery width
+- [x] Lint everything
+- [x] Make code more readable
 - [ ] Make sure things work on mobile
-- [ ] Write test cases, perform them
-- [ ] Lint everything
-- [ ] Make code more readable
+- [ ] Update README
 
 ## File types
 
