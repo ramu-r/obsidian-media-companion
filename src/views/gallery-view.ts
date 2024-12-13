@@ -5,34 +5,34 @@ import type MediaCompanion from "main";
 export const VIEW_TYPE_GALLERY = "gallery-view";
 
 export class GalleryView extends ItemView {
-  component!: Gallery;
-  plugin: MediaCompanion;
+	component!: Gallery;
+	plugin: MediaCompanion;
 
-  public constructor(leaf: WorkspaceLeaf, plugin: MediaCompanion) {
-    super(leaf);
-    this.plugin = plugin;
-  }
+	public constructor(leaf: WorkspaceLeaf, plugin: MediaCompanion) {
+		super(leaf);
+		this.plugin = plugin;
+	}
 
-  public getViewType() {
-    return VIEW_TYPE_GALLERY;
-  }
+	public getViewType() {
+		return VIEW_TYPE_GALLERY;
+	}
 
-  public getDisplayText() {
-    return "Gallery view";
-  }
+	public getDisplayText() {
+		return "Gallery view";
+	}
 
-  public getIcon() {
-    return "image";
-  }
+	public getIcon() {
+		return "image";
+	}
 
-  public async onOpen() {
-    this.component = new Gallery({
-      target: this.contentEl,
-      props: { }
-    });
-  }
+	public async onOpen() {
+		this.component = new Gallery({
+			target: this.contentEl,
+			props: { }
+		});
+	}
 
-  public async onClose() {
-    this.component.$destroy();
-  }
+	public async onClose() {
+		this.component.$destroy();
+	}
 }

@@ -3,56 +3,56 @@ import Sidecar from "./sidecar";
 import { getMediaType, type MediaTypes } from "./types/mediaTypes";
 
 export default class MediaFile {
-    public sidecar!: Sidecar;
-    public file!: TFile;
-    protected app!: App;
+	public sidecar!: Sidecar;
+	public file!: TFile;
+	protected app!: App;
 
-    public static last_updated_tag = "MC-last-updated";
+	public static last_updated_tag = "MC-last-updated";
     
-    protected constructor() { }
+	protected constructor() { }
 
-    /**
+	/**
      * Create a new MediaFile from a binary file
      * @param file The file to create a MediaFile from
      * @param app The app instance
      * @returns The created MediaFile
      */
-    public static async create(file: TFile, app: App, sidecar: TFile | null = null): Promise<MediaFile> {
-        let f = new MediaFile();
+	public static async create(file: TFile, app: App, sidecar: TFile | null = null): Promise<MediaFile> {
+		const f = new MediaFile();
 
-        await MediaFile.fill(f, file, app, sidecar);
+		await MediaFile.fill(f, file, app, sidecar);
 
-        return f;
-    }
+		return f;
+	}
 
-    /**
+	/**
      * Fill the variables of the MediaFile
      * @param f The MediaFile to fill
      * @param file The related binary file
      * @param app The app instance
      */
-    protected static async fill(f: MediaFile, file: TFile, app: App, sidecar: TFile | null = null): Promise<void> {
-        f.file = file;
-        f.app = app;
+	protected static async fill(f: MediaFile, file: TFile, app: App, sidecar: TFile | null = null): Promise<void> {
+		f.file = file;
+		f.app = app;
 
-        f.sidecar = await Sidecar.create(file, app, sidecar);
+		f.sidecar = await Sidecar.create(file, app, sidecar);
 
-        await f.update();
-    }
+		await f.update();
+	}
 
-    public getType(): MediaTypes {
-        return getMediaType(this.file.extension);
-    }
+	public getType(): MediaTypes {
+		return getMediaType(this.file.extension);
+	}
 
-    /**
+	/**
      * Update a file after it has been edited
      */
-    public async update(): Promise<void> {
-        let last_updated = this.sidecar.getFrontmatterTag(MediaFile.last_updated_tag);
+	public async update(): Promise<void> {
+		const last_updated = this.sidecar.getFrontmatterTag(MediaFile.last_updated_tag) as number;
 
-        if (!last_updated ||
+		if (!last_updated ||
             last_updated < this.file.stat.mtime) {
-            await this.sidecar.setFrontmatterTag(MediaFile.last_updated_tag, new Date(), "datetime");
-        }
-    }
+			await this.sidecar.setFrontmatterTag(MediaFile.last_updated_tag, new Date(), "datetime");
+		}
+	}
 }

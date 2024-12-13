@@ -3,15 +3,18 @@
     "parser": "@typescript-eslint/parser",
     "env": { "node": true },
     "plugins": [
-      "@typescript-eslint"
+      "@typescript-eslint",
+	  "editorconfig"
     ],
     "extends": [
       "eslint:recommended",
       "plugin:@typescript-eslint/eslint-recommended",
-      "plugin:@typescript-eslint/recommended"
+      "plugin:@typescript-eslint/recommended",
+	  "plugin:editorconfig/all"
     ], 
     "parserOptions": {
-        "sourceType": "module"
+        "sourceType": "module",
+		"project": "./tsconfig.json"
     },
     "rules": {
       "no-unused-vars": "off",
@@ -19,7 +22,12 @@
       "@typescript-eslint/ban-ts-comment": "off",
       "no-prototype-builtins": "off",
       "@typescript-eslint/no-empty-function": "off",
-      "require-await": "off",
-      "@typescript-eslint/require-await": "error"
+	  "@typescript-eslint/await-thenable": "error", // Warns when `await` is used on non-promises
+	  "@typescript-eslint/no-misused-promises": [
+		"error",
+		{
+		  "checksVoidReturn": false // Ensures you don't use `await` on functions with no meaningful return
+		}
+	  ]
     } 
   }

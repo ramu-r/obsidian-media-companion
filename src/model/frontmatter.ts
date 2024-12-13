@@ -3,8 +3,8 @@
 export const reservedImageTags: string[] = ["size", "shape", "colors"];
 
 export const reservedFrontMatterTags: string[] = [...new Set([
-    ...reservedImageTags,
+	...reservedImageTags,
 ])];
 
 // The frontmatter tag used by obsidian to store tags
-export const tagsTag: string = "tags";
+export const tagsTag = "tags";

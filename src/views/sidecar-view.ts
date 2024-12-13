@@ -5,35 +5,35 @@ import type MediaFile from "src/model/mediaFile";
 export const VIEW_TYPE_SIDECAR = "media-companion-sidecar-view";
 
 export class SidecarView extends ItemView {
-  component!: Sidecar;
-  file!: MediaFile;
+	component!: Sidecar;
+	file!: MediaFile;
 
-  constructor(leaf: WorkspaceLeaf) {
-    super(leaf);
-  }
+	constructor(leaf: WorkspaceLeaf) {
+		super(leaf);
+	}
 
-  public getViewType() {
-    return VIEW_TYPE_SIDECAR;
-  }
+	public getViewType() {
+		return VIEW_TYPE_SIDECAR;
+	}
 
-  public getDisplayText() {
-    return "Sidecar";
-  }
+	public getDisplayText() {
+		return "Sidecar";
+	}
 
-  public getIcon() {
-    return "image";
-  }
+	public getIcon() {
+		return "image";
+	}
 
-  public async onOpen() {
-    this.component = new Sidecar({
-      target: this.contentEl,
-      props: { },
-    });
-  }
+	public async onOpen() {
+		this.component = new Sidecar({
+			target: this.contentEl,
+			props: { },
+		});
+	}
 
-  public async onClose() {
-    if (this.component) {
-      this.component.$destroy();
-    }
-  }
+	public async onClose() {
+		if (this.component) {
+			this.component.$destroy();
+		}
+	}
 }

@@ -3,9 +3,9 @@
  * Used for images
  */
 export enum Shape {
-    Square = "square",
-    Horizontal = "horizontal",
-    Vertical = "vertical",
+	Square = "square",
+	Horizontal = "horizontal",
+	Vertical = "vertical",
 }
 
 /**
@@ -15,11 +15,11 @@ export enum Shape {
  * @returns The shape of the object
  */
 export function getShape(width: number, height: number): Shape {
-    if (width === height) {
-        return Shape.Square;
-    } else if (width > height) {
-        return Shape.Horizontal;
-    } else {
-        return Shape.Vertical;
-    }
+	if (width === height) {
+		return Shape.Square;
+	} else if (width > height) {
+		return Shape.Horizontal;
+	} else {
+		return Shape.Vertical;
+	}
 }

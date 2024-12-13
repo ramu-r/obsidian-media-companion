@@ -1,4 +1,4 @@
-import { App, MarkdownEditView, MarkdownRenderer, normalizePath, Plugin, PluginSettingTab, Setting, View, Workspace, WorkspaceLeaf } from 'obsidian';
+import { App, Plugin, PluginSettingTab, Setting, WorkspaceLeaf } from 'obsidian';
 import { GalleryView, VIEW_TYPE_GALLERY } from 'src/views/gallery-view';
 import { DEFAULT_SETTINGS } from 'src/settings'
 
@@ -26,12 +26,12 @@ export default class MediaCompanion extends Plugin {
 		this.mutationHandler = new MutationHandler(this.app, this, this.cache);
 
 		// We want to register our views here but only start rendering them once the cache is initialized
-		await this.registerViews();
+		this.registerViews();
 
 		this.app.workspace.onLayoutReady(async () => {
 			await this.cache.initialize();
 
-			await this.registerEvents();
+			this.registerEvents();
 
 			// @ts-ignore - Need to set this manually, unsure if there's a better way
 			this.app.metadataTypeManager.properties[MediaFile.last_updated_tag.toLowerCase()].type = "datetime";
@@ -46,12 +46,12 @@ export default class MediaCompanion extends Plugin {
 		this.addSettingTab(new MediaCompanionSettingTab(this.app, this));
 	}
 
-	async registerEvents() {
+	registerEvents() {
 		this.mutationHandler.initializeEvents();
 
 		this.registerEvent(this.app.workspace.on("layout-change", async () => {
 			const explorers = this.app.workspace.getLeavesOfType("file-explorer");
-			for (let explorer of explorers) {
+			for (const explorer of explorers) {
 				await this.cache.hideAll(explorer);
 			}
 		}));
@@ -59,7 +59,7 @@ export default class MediaCompanion extends Plugin {
 		this.registerEvent(this.app.workspace.on("file-open", async (file) => {
 			if (file) {
 				if (this.settings.extensions.contains(file.extension.toLowerCase())) {
-					let mediaFile = await this.cache.getFile(file.path);
+					const mediaFile = this.cache.getFile(file.path);
 					if (mediaFile) {
 						activeStore.file.set(mediaFile);
 					}
@@ -76,12 +76,12 @@ export default class MediaCompanion extends Plugin {
 
 	async onunload() {}
 
-	async registerViews() {
+	registerViews() {
 		this.registerView(VIEW_TYPE_GALLERY, (leaf) => new GalleryView(leaf, this));
 		this.registerView(VIEW_TYPE_SIDECAR, (leaf) => new SidecarView(leaf));
 	}
 
-	async createSidecar(focus: boolean = true) {
+	async createSidecar(focus = true) {
 		const leaves = this.app.workspace.getLeavesOfType(VIEW_TYPE_SIDECAR);
 		let leaf: WorkspaceLeaf | null = null;
 
@@ -158,7 +158,7 @@ class MediaCompanionSettingTab extends PluginSettingTab {
 						.filter((ext) => ext.length > 0)
 						.map((ext) => ext.toLowerCase())
 						.filter((ext) => ext !== 'md');
-						console.log("Changed!");
+					console.log("Changed!");
 					await this.plugin.saveSettings();
 					await this.plugin.cache.updateExtensions();
 				}));
