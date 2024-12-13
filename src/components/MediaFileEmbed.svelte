@@ -34,14 +34,23 @@
 </script>
 
 {#if embedCreator}
-    <div bind:this={containerEl} class="embeded"></div>
+    <div bind:this={containerEl} class="MC-embeded"></div>
 {:else}
 	{file.path}	
 {/if}
 
 <style>
-	:global(.embeded) {
-		height: fit-content;
+	:global(.MC-embeded) {
+		max-height: inherit;
 		line-height: 0;
+		display: block;
+	}
+	:global(.MC-embeded div) {
+		max-height: inherit;
+		line-height: 0;
+		display: flex;
+	}
+	:global(.MC-embeded div > *) {
+		object-fit: contain;
 	}
 </style>

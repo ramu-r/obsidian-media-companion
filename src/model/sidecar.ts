@@ -132,7 +132,7 @@ export default class Sidecar {
                 this.app.metadataTypeManager.properties[tag.toLowerCase()].type = type;
             }
         } catch (e) {
-            console.log(e);
+            console.error(e);
         }
     }
 }

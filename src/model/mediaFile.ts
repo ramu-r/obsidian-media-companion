@@ -7,7 +7,7 @@ export default class MediaFile {
     public file!: TFile;
     protected app!: App;
 
-    public static last_updated_tag = "MediaCompanion Last Updated";
+    public static last_updated_tag = "MC-last-updated";
     
     protected constructor() { }
 

@@ -15,7 +15,7 @@ export default class Cache {
     private app: App;
     private plugin: MediaCompanion;
 
-    private initializing: boolean = false;
+    private building: boolean = false;
     private initialized: boolean = false;
 
     public constructor(app: App, plugin: MediaCompanion) {
@@ -25,6 +25,15 @@ export default class Cache {
         this.plugin = plugin;
     }
 
+	public async awaitReady(): Promise<void> {
+		await this.initialize();
+		if (this.building || !this.initialized) {
+            while (this.building || !this.initialized) {
+                await new Promise(resolve => setTimeout(resolve, 100));
+            }
+        }
+	}
+
     /**
      * Initialize the cahce with all the (supported) files in the vault
      */
@@ -32,14 +41,14 @@ export default class Cache {
         if (this.initialized) return;
         
         // Prevent multiple initializations
-        if (this.initializing) {
-            while (this.initializing) {
+        if (this.building) {
+            while (this.building) {
                 await new Promise(resolve => setTimeout(resolve, 100));
             }
             return;
         }
 
-        this.initializing = true;
+        this.building = true;
         
         let files = this.app.vault.getFiles();
 
@@ -49,7 +58,7 @@ export default class Cache {
 
         files = files.filter(f => this.plugin.settings.extensions.contains(f.extension.toLowerCase()));
 
-        console.log(
+        console.debug(
             `%c[Media Companion]: %cBuilding cache with ${files.length} media files found of ${total_files} files total \n                   If this is the first time, this may take a while`, 
             "color: #00b7eb", "color: inherit"
         );
@@ -79,14 +88,60 @@ export default class Cache {
 
         notice.hide();
 
-        console.log(
+        console.debug(
             `%c[Media Companion]: %cFinished building cache in ${(Date.now() - timer) / 1000}s, ${this.files.length} files in cache`, 
             "color: #00b7eb", "color: inherit"
         );
 
         this.initialized = true;
-        this.initializing = false;
+        this.building = false;
     }
+
+	public async updateExtensions(): Promise<void> {
+		if (this.building) {
+            while (this.building) {
+                await new Promise(resolve => setTimeout(resolve, 100));
+            }
+        }
+
+        this.building = true;
+
+		this.files = this.files.filter(f => this.plugin.settings.extensions.contains(f.file.extension.toLowerCase()));
+
+		let files = this.app.vault.getFiles();
+
+		console.log(this.plugin.settings.extensions);
+
+        files = files.filter(f => this.plugin.settings.extensions.contains(f.extension.toLowerCase()));
+		// This is an awful way to do this; It's O(N^2) - Should improve at some point
+		files = files.filter(f => !this.files.filter(mf => mf.file.path == f.path));
+
+		let notice = new Notice(`Adding ${files.length} new files`, 0);	
+
+		let total_done = 0;
+
+		for (let file of files) {
+            let mediaFile;
+
+            switch (getMediaType(file.extension)) {
+                case MediaTypes.Image:
+                    mediaFile = await MCImage.create(file, this.app);
+                    break;
+                case MediaTypes.Unknown:
+                default:
+                    mediaFile = await MediaFile.create(file, this.app);
+                    break;
+            }
+                
+            await this.addFile(mediaFile);
+
+            total_done++;
+            notice.setMessage(`Media Companion: ${total_done}/${files.length} new files added\nProcessing may take a while if many new files have been added`);
+        }
+
+		notice.hide();
+		this.building = false;
+	}
 
     /**
      * Add a file to the cache

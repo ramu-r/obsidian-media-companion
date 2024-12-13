@@ -3,8 +3,8 @@ import type { App, TFile } from "obsidian";
 import { extractColors } from "extract-colors";
 
 export default class MCImage extends MediaFile {
-    public static size_tag = "Size";
-    public static colors_tag = "Colors";
+    public static size_tag = "MC-size";
+    public static colors_tag = "MC-colors";
 
     protected constructor() { super(); }
 
@@ -39,14 +39,16 @@ export default class MCImage extends MediaFile {
      * @returns The colors, in the format dictated by the extract-colors package
      */
     private async readColors(): Promise<any> {
-        let extracted = await extractColors(this.app.vault.getResourcePath(this.file));
+        let extracted = await extractColors(
+			this.app.vault.getResourcePath(this.file),
+			{pixels: 16000});
         let colors = [];
 
         for (let e of extracted) {
             colors.push({
-                red: e.red,
-                green: e.green,
-                blue: e.blue,
+                h: e.hue,
+                s: e.saturation,
+                l: e.lightness,
                 area: e.area,
             });
         }

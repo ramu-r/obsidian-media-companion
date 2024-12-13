@@ -1,5 +1,5 @@
 <!-- 
-Modified version of: https://github.com/agustinl/svelte-tags-input 
+Modified version of: https://github.com/agustinl/MC-input 
 Available under MIT:
 MIT License Copyright (c) 2024 Agustín Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions: The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software. THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
@@ -23,7 +23,7 @@ Modified to:
 	export let placeholder: string = "";
 	export let autoComplete: string[] | boolean = false;
 	export let autoCompleteFilter: boolean = true;
-	export let name: string = "svelte-tags-input";
+	export let name: string = "MC-input";
 	export let id: string = uniqueID();
 	export let minChars: number = 1;
 	export let labelText: string = name;
@@ -231,14 +231,14 @@ Modified to:
 	};
 </script>
 	
-<div class="svelte-tags-input-layout" bind:this={layoutElement}>
+<div class="MC-input-layout" bind:this={layoutElement}>
 	<label for={id} class={labelShow ? "" : "sr-only"}>{labelText}</label>
 	
 	{#if selected.length > 0}
 		{#each selected as tag, i}
-			<button type="button" class="svelte-tags-input-tag">
+			<button type="button" class="MC-input-tag">
 				{tag}
-                <span class="svelte-tags-input-tag-remove" on:pointerdown={() => removeTag(i)}> &#215;</span>
+                <span class="MC-input-tag-remove" on:pointerdown={() => removeTag(i)}> &#215;</span>
 			</button>
 		{/each}
 	{/if}
@@ -252,7 +252,7 @@ Modified to:
 		on:focus={onFocus}
 		on:blur={(e) => onBlur(e, tag)}
 		on:pointerdown={onClick}
-		class="svelte-tags-input"
+		class="MC-input"
 		placeholder={placeholder}
 		autocomplete="off"
 		bind:this={inputElement}
@@ -260,8 +260,8 @@ Modified to:
 </div>
 	
 {#if autoComplete && arrelementsmatch.length > 0}
-	<div class="svelte-tags-input-matchs-parent">
-		<ul id="{id}_matchs" class="svelte-tags-input-matchs">
+	<div class="MC-input-matchs-parent">
+		<ul id="{id}_matchs" class="MC-input-matchs">
 			{#each arrelementsmatch as element, index}
 				<li
 					tabindex="-1"
@@ -275,22 +275,15 @@ Modified to:
 {/if}
 	
 <style>
-/* CSS svelte-tags-input */
-	.svelte-tags-input,
-	.svelte-tags-input-tag,
-	.svelte-tags-input-matchs,
-	.svelte-tags-input-layout label {
-		padding: 2px 5px;
-	}
-	
-	.svelte-tags-input-layout label {
+/* CSS MC-input */	
+	:global(.MC-input-layout label) {
 		margin: 0 5px 0 0;
 		padding: 0;
 	}
 	
-	/* svelte-tags-input-layout */
+	/* MC-input-layout */
 	
-	.svelte-tags-input-layout {
+	:global(.MC-input-layout) {
 		margin: 5px;
 		display: flex;
 		flex-wrap: wrap;
@@ -301,34 +294,36 @@ Modified to:
 		border-radius: var(--input-radius);
 	}
 	
-	.svelte-tags-input-tag-remove {
+	:global(.MC-input-tag-remove) {
 		cursor: pointer;
 	}
 	
-	.svelte-tags-input-layout:focus,
-	.svelte-tags-input-layout:hover {
+	:global(.MC-input-layout:focus,
+	.MC-input-layout:hover) {
 		border-color: var(--background-modifier-border-hover);
 	}
 	
 	
-	/* svelte-tags-input */
+	/* MC-input */
 	
-	.svelte-tags-input {
+	:global(input[type='text'].MC-input) {
 		/* Parent handles background */
+		padding: 2px 5px;
 		background: unset;
 		flex: 1;
 		margin: 0;
 		border: none;
 	}
 	
-	.svelte-tags-input:focus {
+	:global(input[type='text'].MC-input:focus) {
 		outline: 0;
 		box-shadow: none;
 	}
 	
-	/* svelte-tags-input-tag */
+	/* MC-input-tag */
 	
-	.svelte-tags-input-tag {
+	:global(button.MC-input-tag) {
+		padding: 2px 5px;
 		cursor: text;
 		display: flex;
 		white-space: nowrap;
@@ -345,13 +340,14 @@ Modified to:
 		margin-top: 0;
 	}
 
-	/* svelte-tags-input-matchs */
+	/* MC-input-matchs */
 	
-	.svelte-tags-input-matchs-parent {
+	:global(.MC-input-matchs-parent) {
 		position: relative;
 	}
 	
-	.svelte-tags-input-matchs {
+	:global(.MC-input-matchs) {
+		padding: 2px 5px;
 		z-index: var(--layer-notice);
 		position: absolute;
 		top: 0;
@@ -367,24 +363,24 @@ Modified to:
 		overflow-x: auto;
 	}
 	
-	.svelte-tags-input-matchs li {
+	:global(.MC-input-matchs li) {
 		list-style: none;
 		padding: 5px;
 		border-radius: var(--modal-radius);
 		cursor: pointer;
 	}
 	
-	.svelte-tags-input-matchs li:hover,
-	.svelte-tags-input-matchs li.focus {
+	:global(.MC-input-matchs li:hover,
+	.MC-input-matchs li.focus) {
 		background: var(--tag-background);
 		border: var(--tag-border-width) solid var(--tag-border-color);
 		color: var(--tag-color);
 		outline: none;
 	}
 	
-	/* svelte-tags-input disabled */
+	/* MC-input disabled */
 				
-	.svelte-tags-input-layout label.sr-only {
+	:global(.MC-input-layout label.sr-only) {
 		position: absolute;
 		width: 1px;
 		height: 1px;

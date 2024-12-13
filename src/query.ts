@@ -156,15 +156,17 @@ export default class Query {
 				if (colors.length === 0) return false;
 				
 				for (let color of colors) {
-					let colorHsl = rgbToHsl(color.red, color.green, color.blue);
+					let ch = color.h * 360;
+					let cs = color.s;
+					let cl = color.l;
 
 					// Handle hue wrap around
 					// In HSL, the hue is a value from 0 to 360
 					// where in practice, 0 and 360 are the same
 					// Imagine them as a circle, where 0 and 360 degrees are the same point
-					let hDiff = Math.min(Math.abs(colorHsl[0] - h), Math.abs(colorHsl[0] - h + 360));
-					let sDiff = Math.abs(colorHsl[1] - s);
-					let lDiff = Math.abs(colorHsl[2] - l);
+					let hDiff = Math.min(Math.abs(ch - h), Math.abs(ch - h + 360));
+					let sDiff = Math.abs(cs - s);
+					let lDiff = Math.abs(cl - l);
 
 					// Completely arbitrary, might want to tweak
 					distance += (hDiff / 180 + sDiff + lDiff) * color.area;
@@ -226,7 +228,7 @@ export default class Query {
     }
 
     public async getItems(): Promise<MediaFile[]> {
-        await this.cache.initialize();
+        await this.cache.awaitReady();
 
         this.files = [...this.cache.files];
 

@@ -9,6 +9,7 @@
 	import type MediaCompanion from "main";
 	import pluginStore from "src/stores/pluginStore";
 	import MediaFileEmbed from "./MediaFileEmbed.svelte";
+	import { debounce } from "obsidian";
 
     // Things that need to be done:
     // - Frontmatter editing, if possible
@@ -19,7 +20,7 @@
 
     const ILLEGAL_FILENAMES = ["CON", "PRN", "AUX", "NUL", "COM1", "COM2", "COM3", "COM4", "COM5", "COM6", "COM7", "COM8", "COM9",
                 "LPT1", "LPT2", "LPT3", "LPT4", "LPT5", "LPT6", "LPT7", "LPT8", "LPT9", ".", ".."]
-    const ILLEGAL_FILENAME_CHARACTERS = ["\/", "<", ">", ":", "\"", "\\", "|", "?", "*"];
+    const ILLEGAL_FILENAME_CHARACTERS = ["\/", "<", ">", ":", "\"", "\\", "|", "?", "*", "[", "]", "^", "#"];
   
     let metadataContainer: HTMLDivElement;
     let editorContainer: HTMLDivElement;
@@ -31,8 +32,12 @@
     let title = "";
     let invalidName = false;
 
-    let renameDebounceTimeout: ReturnType<typeof setTimeout> | null = null;
-    let fileEditDebounceTimeout: ReturnType<typeof setTimeout> | null = null;
+    let renameDebounce = debounce(() => {
+		renameFile();
+	}, 1000, true);
+    let fileEditDebounce = debounce(() => {
+		saveFile();
+	});
 
     let fileContent: string = "";
     let fileContentLastEdited: number = 0;
@@ -96,10 +101,7 @@
     }
 
     function onTitleInput() {
-        if (renameDebounceTimeout) {
-            clearTimeout(renameDebounceTimeout);
-        }
-        renameDebounceTimeout = setTimeout(renameFile, 1000);
+        renameDebounce();
     }
 
     function onTitleKeyDown(e: KeyboardEvent) {
@@ -120,6 +122,11 @@
         activeStore.file.subscribe(async (newFile) => {
             if (!newFile || !editorView) return; // If undefined, don't do anything
 
+			renameDebounce.run();
+			renameDebounce.cancel();
+			fileEditDebounce.run();
+			fileEditDebounce.cancel();
+
             invalidName = false;
 
             if (editorObserver) {
@@ -134,10 +141,7 @@
                 fileContentLastEdited = Date.now();
 
                 // Needs debouncing
-                if (fileEditDebounceTimeout) {
-                    clearTimeout(fileEditDebounceTimeout);
-                }
-                fileEditDebounceTimeout = setTimeout(saveFile, 250);
+                fileEditDebounce();
             });
             editorObserver.observe(editorContainer, { childList: true, subtree: true, characterData: true });
 
@@ -155,14 +159,11 @@
     });
 
     onDestroy(() => {
-        if (renameDebounceTimeout) {
-            clearTimeout(renameDebounceTimeout);
-            renameFile();
-        }
-        if (fileEditDebounceTimeout) {
-            clearTimeout(fileEditDebounceTimeout);
-            saveFile();
-        }
+		renameDebounce.run();
+		renameDebounce.cancel();
+
+        fileEditDebounce.run();
+		fileEditDebounce.cancel();
 
         if (editorObserver) {
             editorObserver.disconnect();
@@ -179,24 +180,26 @@
     });
 </script>
   
-<div class="media-companion-sidecar-container">
+<div class="MC-sidecar-container">
     {#if !file}
-        <h3 class="media-companion-sidecar-nofile">No file selected</h3>
+        <h3 class="MC-sidecar-nofile">No file selected</h3>
     {:else}
     {#if file.file}
-        <MediaFileEmbed file={file.file} />
+		<div class="MC-embed-container">
+    	    <MediaFileEmbed file={file.file} />
+		</div>
     {/if}
     {/if}
-        <textarea class="media-companion-sidecar-title" class:media-companion-sidecar-title-invalid={invalidName} bind:value={title} bind:this={titleTextarea} hidden="{!file}"></textarea>
+        <textarea class="MC-sidecar-title" class:MC-sidecar-title-invalid={invalidName} bind:value={title} bind:this={titleTextarea} hidden="{!file}"></textarea>
     {#if invalidName}
-        <p class="media-companion-sidecar-title-message">Invalid filename</p>
+        <p class="MC-sidecar-title-message">Invalid filename</p>
     {/if}
-        <div bind:this={metadataContainer} hidden="{!file}" class="media-companion-sidecar-metadata"></div> 
-        <div bind:this={editorContainer} hidden="{!file}" class="media-companion-sidecar-editor"></div>
+        <div bind:this={metadataContainer} hidden="{!file}" class="MC-sidecar-metadata"></div> 
+        <div bind:this={editorContainer} hidden="{!file}" class="MC-sidecar-editor"></div>
 </div>
   
 <style>
-    :global(.media-companion-sidecar-title) {
+    :global(.MC-sidecar-title) {
         font-size: 1.5em;
         font-weight: bold;
         width: 100%;
@@ -206,24 +209,24 @@
         field-sizing: content;
     }
 
-    :global(.media-companion-sidecar-title-invalid) {
+    :global(.MC-sidecar-title-invalid) {
         border: 1px solid red;
         color: red;
     }
 
-    :global(.media-companion-sidecar-title-invalid:active) {
+    :global(.MC-sidecar-title-invalid:active) {
         border: 1px solid red;
         color: red;
     }
 
-    :global(.media-companion-sidecar-title-message) {
+    :global(.MC-sidecar-title-message) {
         color: red;
         text-align: center;
         padding: 0;
         margin: 0;
     }
 
-    :global(.media-companion-sidecar-container) {
+    :global(.MC-sidecar-container) {
         display: flex;
         flex-direction: column;
         gap: 1rem;
@@ -232,17 +235,16 @@
         overflow-x: hidden;
     }
 
-    :global(.media-companion-sidecar-nofile) {
+    :global(.MC-sidecar-nofile) {
         text-align: center;
     }
 
-    :global(.media-companion-sidecar-image) {
-        object-fit: contain;
-        height: 15em;
-        padding: 1em;
+    :global(.MC-embed-container) {
+        max-height: 15em;
+        margin: 1em;
     }
 
-    :global(.media-companion-sidecar-editor) {
+    :global(.MC-sidecar-editor) {
         flex: 1;
         overflow-y: auto;
         padding: 1em;

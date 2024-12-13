@@ -25,13 +25,13 @@ Everything needed for a minimal viable product. In general, this means: Cleaning
 - [x] Fix some jank with the sidecar file saving and being loaded in
 - [x] Add search suggestions
 - [x] Make the gallery responsive
+- [x] Use the right embedding system to embed files...
+- [x] Fix saving stuff - When someone clicks on a new file fast - https://docs.obsidian.md/Reference/TypeScript+API/debounce, https://docs.obsidian.md/Reference/TypeScript+API/Debouncer/run
+- [x] Resolve lag when switching tab - Likely due to the gallery width
 - [ ] Make sure things work on mobile
 - [ ] Write test cases, perform them
 - [ ] Lint everything
 - [ ] Make code more readable
-- [x] Use the right embedding system to embed files...
-- [ ] Fix saving stuff - When someone clicks on a new file fast - https://docs.obsidian.md/Reference/TypeScript+API/debounce, https://docs.obsidian.md/Reference/TypeScript+API/Debouncer/run
-- [ ] Resolve lag when switching tab - Likely due to the gallery width
 
 ## File types
 

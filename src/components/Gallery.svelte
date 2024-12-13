@@ -13,6 +13,7 @@
 	import type { Shape } from "src/model/types/shape";
 	import SuggestInput from "./SuggestInput.svelte";
 	import MediaFileEmbed from "./MediaFileEmbed.svelte"
+	import { debounce } from "obsidian";
 
     let plugin: MediaCompanion = get(pluginStore.plugin);
     let app: App = get(appStore.app);
@@ -26,7 +27,28 @@
 
     let elementSize: number = 200;
 
-    let searchDebounce: ReturnType<typeof setTimeout> | null = null;
+    let searchDebounce = debounce(async () => {
+            items = [];
+            currentGroup = 0;
+            query = new Query(plugin.cache, {
+                color: searchColor,
+                folders: searchFolders,
+                name: "",
+                tags: searchTags.map(tag => tag.startsWith('#') ? tag.slice(1) : tag),
+                fileTypes: searchFileTypes,
+                shape: searchShapes,
+                dimensions: null, 
+                orderBy: {
+                    option: orderBy,
+                    value: ""
+                },
+                orderIncreasing: orderIncreasing,
+                hasFrontMatter: []
+            });
+            allItems = await query.getItems();
+            await loadNextGroup();
+			reloadMasonry();
+		}, 300, true);
     let searchColor: string = "";
     let searchFolders: string[] = [];
     let searchTags: string[] = [];
@@ -35,7 +57,7 @@
     let orderBy: OrderByOptions = OrderByOptions.name;
     let orderIncreasing: boolean = true;
 
-	let isCollapsed: boolean = false;
+	let isCollapsed: boolean = true;
 
     let masonry: Masonry;
     let masonryContainer: HTMLDivElement;
@@ -48,7 +70,6 @@
     let currentGroup: number = 0;
     const groupSize: number = 20;
     
-    let resizeTimeout: ReturnType<typeof setTimeout> | null = null;
     const resizeObserver = new ResizeObserver(() => onResize());
 
     // @ts-ignore
@@ -153,20 +174,14 @@
     }
 
     function onResize() { 
-        if (scrollContainer && masonryContainer) {
+		// Third: Make sure the masonryContainer is visible
+        if (scrollContainer && masonryContainer && masonryContainer.offsetParent !== null) {
+			reloadMasonry();
+            reloadMasonry();
 
-            if (resizeTimeout) clearTimeout(resizeTimeout);
-
-            resizeTimeout = setTimeout(() => {
-                // Need to do it twice here to adjust the image sizes and then
-                // adjust the masonry layout to fit the new image sizes
-                reloadMasonry();
-                reloadMasonry();
-
-				if (!isScrollbarVisible()) {
-					loadNextGroup().then(() => {});
-				}
-            }, 50);
+			if (!isScrollbarVisible()) {
+			   	loadNextGroup().then(() => {});
+			}
         }
     }
 
@@ -235,8 +250,8 @@
 
         masonry = new Masonry(masonryContainer, {
             transitionDuration: 0, // Turn off animations; Looks weird when adding items
-			columnWidth: ".gallery-sizer",
-            itemSelector: ".gallery-item",
+			columnWidth: ".MC-gallery-sizer",
+            itemSelector: ".MC-gallery-item",
             fitWidth: true,
         });
 
@@ -270,59 +285,15 @@
     }
 
     function onSearchChange() {
-        // Debounce search
-        if (searchDebounce) clearTimeout(searchDebounce);
-
-        searchDebounce = setTimeout(async () => {
-            items = [];
-            currentGroup = 0;
-            query = new Query(plugin.cache, {
-                color: searchColor,
-                folders: searchFolders,
-                name: "",
-                tags: searchTags.map(tag => tag.startsWith('#') ? tag.slice(1) : tag),
-                fileTypes: searchFileTypes,
-                shape: searchShapes,
-                dimensions: null, 
-                orderBy: {
-                    option: orderBy,
-                    value: ""
-                },
-                orderIncreasing: orderIncreasing,
-                hasFrontMatter: []
-            });
-            allItems = await query.getItems();
-            await loadNextGroup();
-			reloadMasonry();
-        }, 300);
+        searchDebounce();
     }
 </script>
 
-<div class="media-companion-gallery-view-container">
+<div class="MC-gallery-view-container">
 {#await plugin.cache.initialize()}
-    <h1 class="media-companion-gallery-loading">Loading cache...</h1>
+    <h1 class="MC-gallery-loading">Loading cache...</h1>
 {:then}
-<div class="media-companion-gallery-search collapsible" class:collapsed={isCollapsed}>
-	<div class="media-companion-gallery-properties">
-		<div class="left-section">
-			<input type="color" name="Color" bind:value={searchColor} on:input={onSearchChange}>
-			<button on:click={()=>{searchColor = ""; onSearchChange()}} class="media-companion-clear-btn">&times;</button>
-		</div>
-        <div class="center-section">
-            - <input type="range" bind:value={elementSize} min="100" max="500" on:input={() => reloadMasonry()}> +
-        </div>
-		<div class="right-section">
-			<label for="orderBy" class="sort-label">Sort by:</label>
-			<select bind:value={orderBy} on:change={onSearchChange}>
-				{#each Object.values(OrderByOptions) as option}
-					<option value={option}>{option.replace(/([A-Z])/g, ' $1').toLowerCase().replace(/^./, str => str.toUpperCase())}</option>
-				{/each}
-			</select>
-			<button class="sort-toggle" on:click={() => { onSearchChange(); orderIncreasing = !orderIncreasing; }}>
-				<i class={orderIncreasing ? 'up' : 'down'}></i>
-			</button>
-		</div>
-	</div>	
+<div class="MC-gallery-search MC-collapsible" class:MC-collapsed={isCollapsed}>
 	<SuggestInput 
 		selected={searchFolders}
 		autoComplete={app.vault.getAllFolders().map(folder => folder.path)} 
@@ -342,15 +313,35 @@
 		onChange={onSearchChange}
 		/>
 </div>
-<hr class="media-companion-gallery-search-hr">
-<button on:click={toggleCollapse} class="media-companion-collapse-button">
-	{isCollapsed ? "⮟" : "⮝"}
-</button>
-<div class="gallery-container" bind:this={scrollContainer}>
-    <div class="gallery-masonry" bind:this={masonryContainer}>
-		<div class="gallery-sizer" style="width: {elementSize}px;"></div>
+<div class="MC-gallery-properties">
+	<div class="MC-left-section">
+		<input type="color" name="Color" bind:value={searchColor} on:input={onSearchChange}>
+		<button on:click={()=>{searchColor = ""; onSearchChange()}} class="MC-clear-btn">&times;</button>
+	</div>
+	<div class="MC-center-section">
+		- <input type="range" bind:value={elementSize} min="100" max="500" on:input={() => reloadMasonry()}> +
+	</div>
+	<div class="MC-right-section">
+		<label for="orderBy" class="MC-sort-label">Sort by:</label>
+		<select bind:value={orderBy} on:change={onSearchChange}>
+			{#each Object.values(OrderByOptions) as option}
+				<option value={option}>{option.replace(/([A-Z])/g, ' $1').toLowerCase().replace(/^./, str => str.toUpperCase())}</option>
+			{/each}
+		</select>
+		<button class="MC-sort-toggle" on:click={() => { onSearchChange(); orderIncreasing = !orderIncreasing; }}>
+			<i class={orderIncreasing ? 'up' : 'down'}></i>
+		</button>
+		<button on:click={toggleCollapse} class="MC-collapse-button">
+			{isCollapsed ? "⮟" : "⮝"}
+		</button>
+	</div>
+</div>
+<hr class="MC-gallery-search-hr">
+<div class="MC-gallery-container" bind:this={scrollContainer}>
+    <div class="MC-gallery-masonry" bind:this={masonryContainer}>
+		<div class="MC-gallery-sizer" style="width: {elementSize}px;"></div>
         {#each items as item}
-            <button class="gallery-item" style="width: {elementSize}px;" on:click={() => onFileClicked(item.file)}>
+            <button class="MC-gallery-item" style="width: {elementSize}px;" on:click={() => onFileClicked(item.file)}>
 				<MediaFileEmbed file={item.file.file} />
             </button>
         {/each}
@@ -360,16 +351,11 @@
 </div>
 
 <style>
-	:global(.media-companion-collapse-button) {
-		display: inline-block;
-		position: relative;
-		width: auto;
-		margin-left: auto;
-		margin-right: 0;
-		z-index: calc(var(--layer-notice) - 1);
+	:global(.MC-collapse-button) {
+		padding: 5px;
 	}
 
-	:global(.media-companion-gallery-properties) {
+	:global(.MC-gallery-properties) {
     	display: flex;
     	justify-content: space-between;
     	align-items: center;
@@ -377,22 +363,22 @@
 		padding: 5px;
 	}
 
-	:global(.left-section) {
+	:global(.MC-left-section) {
 	    display: flex;
 	    align-items: center;
 	}
 
-	:global(.left-section input[type="color"]) {
+	:global(.MC-left-section input[type="color"]) {
 	    margin-right: 8px;
 	    vertical-align: middle;
 	}
 
-    :global(.center-section) {
+    :global(.MC-center-section) {
         display: flex;
         align-items: center;
     }
 
-	:global(.media-companion-gallery-properties .media-companion-clear-btn) {
+	:global(.MC-gallery-properties .MC-clear-btn) {
 	    background: none;
 	    border: none;
 	    font-size: 16px;
@@ -401,65 +387,60 @@
 		box-shadow: none;
 	}
 
-	:global(.right-section) {
+	:global(.MC-right-section) {
 	    display: flex;
 	    align-items: center;
 	}
 
-	:global(.right-section label) {
+	:global(.MC-right-section > *) {
 	    margin-right: 10px;
 	}
 
-	:global(.right-section select) {
-	    margin-right: 10px;
-	}
-
-	:global(.sort-toggle) {
+	:global(.MC-sort-toggle) {
 	    cursor: pointer;
 	}
 
-	:global(.sort-toggle i) {
+	:global(.MC-sort-toggle i) {
 	    font-size: 16px;
 	}
 
-	.sort-toggle .up::before {
-	    content: "↑"; /* Up arrow */
+	:global(.MC-sort-toggle .up::before) {
+	    content: "↑";
 	}
 
-	.sort-toggle .down::before {
-	    content: "↓"; /* Down arrow */
+	:global(.MC-sort-toggle .down::before) {
+	    content: "↓";
 	}
 
-	:global(.collapsible) {
+	:global(.MC-collapsible) {
 		transition: all 1s ease
 	}
 
-	:global(.collapsed) {
+	:global(.MC-collapsed) {
 		height: 1px;
 		overflow: hidden; 
 	}
 
-    :global(.media-companion-gallery-view-container) {
+    :global(.MC-gallery-view-container) {
         display: flex;
         flex-direction: column;
         height: 100%;
     }
 
-    :global(.gallery-masonry) {
+    :global(.MC-gallery-masonry) {
         display: block;
         width: 100%;
     }
 
-    :global(.media-companion-gallery-search-hr) {
+    :global(.MC-gallery-search-hr) {
         margin: 4px;
     }
 
-    :global(.media-companion-gallery-loading) {
+    :global(.MC-gallery-loading) {
         text-align: center;
     }
 
-    :global(.gallery-container) {
-		top: -1em;
+    :global(.MC-gallery-container) {
 		position: relative;
         display: flex;
 		width: 100%;
@@ -469,19 +450,20 @@
 		padding: 0 !important;
     }
 
-    :global(button.gallery-item) {
+    :global(button.MC-gallery-item) {
         all: unset;
         padding: 0px;
         /* width: 20%; */
         box-sizing: border-box;
     }
 
-	:global(.gallery-item div) {
+	:global(.MC-gallery-item div) {
 		border: 2px solid #00000000;
 	}
 
-    :global(.gallery-item:focus div) {
+    :global(.MC-gallery-item:focus div) {
 		border: 2px solid var(--interactive-accent);
 		border-radius: 2px;
     }
+
 </style>
