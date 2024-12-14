@@ -7,6 +7,7 @@
 	let app: App = get(appStore.app);
 
 	export let file: TFile;
+	export let recomputeDimensions: () => void = () => {};
 
 	let embedCreator = app.embedRegistry.getEmbedCreator(file);
 	let containerEl: HTMLDivElement;
@@ -30,13 +31,18 @@
 
 	onMount(() => {
 		setEmbed();
+
+		const videoEl = containerEl.getElementsByTagName("video")[0];
+		if (videoEl) {
+			videoEl.addEventListener("loadedmetadata", () => recomputeDimensions(), false);
+		}
 	});
 </script>
 
 {#if embedCreator}
     <div bind:this={containerEl} class="MC-embeded"></div>
 {:else}
-	{file.path}	
+	<div class="MC-no-embed">{file.path}</div>	
 {/if}
 
 <style>
@@ -52,5 +58,11 @@
 	}
 	:global(.MC-embeded div > *) {
 		object-fit: contain;
+		width: 100%;
+	}
+	:global(.MC-no-embed) {
+		min-height: 200px;
+		background-color: var(--tag-background);
+		color: var(--tag-color);
 	}
 </style>

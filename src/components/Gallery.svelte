@@ -214,6 +214,8 @@
         await new Promise((resolve) => setTimeout(resolve, 50));
 
         if (!isScrollbarVisible()) {
+			// Don't load in things too fast
+			await new Promise((resolve) => setTimeout(resolve, 500));
             await loadNextGroup();
         }
         else {
@@ -342,7 +344,7 @@
 		<div class="MC-gallery-sizer" style="width: {elementSize}px;"></div>
         {#each items as item}
             <button class="MC-gallery-item" style="width: {elementSize}px;" on:click={() => onFileClicked(item.file)}>
-				<MediaFileEmbed file={item.file.file} />
+				<MediaFileEmbed file={item.file.file} recomputeDimensions={() => reloadMasonry()} />
             </button>
         {/each}
     </div>

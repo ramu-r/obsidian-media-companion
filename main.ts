@@ -1,4 +1,4 @@
-import { App, Plugin, PluginSettingTab, Setting, WorkspaceLeaf } from 'obsidian';
+import { App, debounce, Plugin, PluginSettingTab, Setting, WorkspaceLeaf } from 'obsidian';
 import { GalleryView, VIEW_TYPE_GALLERY } from 'src/views/gallery-view';
 import { DEFAULT_SETTINGS } from 'src/settings'
 
@@ -132,6 +132,17 @@ class MediaCompanionSettingTab extends PluginSettingTab {
 
 	display(): void {
 		const { containerEl } = this;
+		const extensionDebounce = debounce(async (value: string) => {
+			this.plugin.settings.extensions = value.split(',')
+				.map((ext) => ext.trim())
+				.map((ext) => ext.replace('.', ''))
+				.filter((ext) => ext.length > 0)
+				.map((ext) => ext.toLowerCase())
+				.filter((ext) => ext !== 'md');
+			console.log("Changed!");
+			await this.plugin.saveSettings();
+			await this.plugin.cache.updateExtensions();
+		}, 500, true);
 
 		containerEl.empty();
 
@@ -152,15 +163,7 @@ class MediaCompanionSettingTab extends PluginSettingTab {
 				.setPlaceholder('jpg, png, gif')
 				.setValue(this.plugin.settings.extensions.join(', '))
 				.onChange(async (value) => {
-					this.plugin.settings.extensions = value.split(',')
-						.map((ext) => ext.trim())
-						.map((ext) => ext.replace('.', ''))
-						.filter((ext) => ext.length > 0)
-						.map((ext) => ext.toLowerCase())
-						.filter((ext) => ext !== 'md');
-					console.log("Changed!");
-					await this.plugin.saveSettings();
-					await this.plugin.cache.updateExtensions();
+					extensionDebounce(value);
 				}));
 	}
 }
