@@ -3,6 +3,7 @@ import process from "process";
 import builtins from "builtin-modules";
 import esbuildSvelte from "esbuild-svelte";
 import sveltePreprocess from "svelte-preprocess";
+import fs from "fs/promises"
 
 const banner =
 `/*
@@ -13,10 +14,13 @@ if you want to view the source, please visit the github repository of this plugi
 
 const prod = (process.argv[2] === "production");
 
+const outfile = "main.js";
+const cssOutputFilename = "styles.css";
+
 const context = await esbuild.context({
 	plugins: [
 		esbuildSvelte({
-			compilerOptions: { css: "injected" },
+			compilerOptions: { css: "external", cssOutputFilename: "styles.css" },
 			preprocess: sveltePreprocess(),
 		}),
 	],
@@ -45,12 +49,32 @@ const context = await esbuild.context({
 	logLevel: "info",
 	sourcemap: prod ? false : "inline",
 	treeShaking: true,
-	outfile: "main.js",
+	outfile,
 });
+
+const renameCss = async () => {
+	const defaultCssOutput = outfile.replace(/\.js$/, ".css");
+	try {
+		await fs.rename(defaultCssOutput, cssOutputFilename);
+		console.log(`CSS file renamed to ${cssOutputFilename}`);
+	} catch (error) {
+		console.error(`Failed to rename CSS file: ${error.message}`);
+	}
+};
 
 if (prod) {
 	await context.rebuild();
+	await renameCss();
 	process.exit(0);
 } else {
 	await context.watch();
+	
+	setInterval(async () => {
+		const defaultCssOutput = outfile.replace(/\.js$/, ".css");
+
+		try {
+			await fs.rename(defaultCssOutput, cssOutputFilename);
+			console.log("Css renamed");
+		} catch (error) {};
+	}, 1000);
 }

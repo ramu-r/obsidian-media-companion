@@ -139,7 +139,6 @@ class MediaCompanionSettingTab extends PluginSettingTab {
 				.filter((ext) => ext.length > 0)
 				.map((ext) => ext.toLowerCase())
 				.filter((ext) => ext !== 'md');
-			console.log("Changed!");
 			await this.plugin.saveSettings();
 			await this.plugin.cache.updateExtensions();
 		}, 500, true);

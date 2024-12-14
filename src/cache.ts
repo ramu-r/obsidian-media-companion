@@ -110,8 +110,6 @@ export default class Cache {
 
 		let files = this.app.vault.getFiles();
 
-		console.log(this.plugin.settings.extensions);
-
 		files = files.filter(f => this.plugin.settings.extensions.contains(f.extension.toLowerCase()));
 		// This is an awful way to do this; It's O(N^2) - Should improve at some point
 		files = files.filter(f => !this.files.filter(mf => mf.file.path == f.path));
