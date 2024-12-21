@@ -26,6 +26,8 @@
 			embed = embedCreator({ app, containerEl: embedElement }, file, file.path);
 			// @ts-ignore - Should work for everything
 			embed.loadFile();
+		} else if (!embedCreator && containerEl) {
+			containerEl.innerHTML = file.path;
 		}
 	}
 
@@ -39,11 +41,11 @@
 	});
 </script>
 
-{#if embedCreator}
-    <div bind:this={containerEl} class="MC-embeded"></div>
-{:else}
-	<div class="MC-no-embed">{file.path}</div>	
-{/if}
+<div bind:this={containerEl} 
+	class:MC-embeded={embedCreator} 
+	class:MC-no-embed={!embedCreator}>
+</div>
+
 
 <style>
 	:global(.MC-embeded) {
@@ -60,9 +62,11 @@
 		object-fit: contain;
 		width: 100%;
 	}
-	:global(.MC-no-embed) {
+	:global(.MC-no-embed) { 
 		min-height: 200px;
 		background-color: var(--tag-background);
 		color: var(--tag-color);
+		text-align: center;
+		align-content: center;
 	}
 </style>

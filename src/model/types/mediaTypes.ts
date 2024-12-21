@@ -18,6 +18,10 @@ export function getMediaType(extention: string): MediaTypes {
 		case "png":
 		case "jpg":
 		case "jpeg":
+		case "webp":
+		case "avif":
+		case "bmp":
+		case "gif":
 			return MediaTypes.Image;
 		default:
 			return MediaTypes.Unknown;

@@ -9,5 +9,9 @@ export const DEFAULT_SETTINGS: MediaCompanionSettings = {
 		'png',
 		'jpg',
 		'jpeg',
+		'bmp',
+		'avif',
+		'webp',
+		'gif',
 	],
 }
