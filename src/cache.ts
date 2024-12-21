@@ -15,6 +15,7 @@ export default class Cache {
 	private app: App;
 	private plugin: MediaCompanion;
 
+	// Whether there is files currently being added or removed from the cache
 	private building = false;
 	private initialized = false;
 
@@ -25,6 +26,9 @@ export default class Cache {
 		this.plugin = plugin;
 	}
 
+	/**
+	 * Will wait in steps of 100ms until the cache is initialized
+	 */
 	public async awaitReady(): Promise<void> {
 		await this.initialize();
 		if (this.building || !this.initialized) {
@@ -97,6 +101,10 @@ export default class Cache {
 		this.building = false;
 	}
 
+	/**
+	 * Will add new files to the cache or remove unneeded ones.
+	 * Should be called whenever plugin.settings.extensions is changed.
+	 */
 	public async updateExtensions(): Promise<void> {
 		if (this.building) {
 			while (this.building) {
@@ -189,6 +197,11 @@ export default class Cache {
 		return mediaFile !== undefined;
 	}
 
+	/**
+	 * Takes every file in the cache and calls the function to hide itself from the
+	 * given file explorer leaf.
+	 * @param leaf The file manager leaf to hide things from
+	 */
 	public async hideAll(leaf: FileExplorerLeaf): Promise<void> {
 		for (const file of this.files) {
 			file.sidecar.hide(leaf);

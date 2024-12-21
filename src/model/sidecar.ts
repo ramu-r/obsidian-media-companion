@@ -64,7 +64,11 @@ export default class Sidecar {
 		}
 	}
 
-	public hide(leaf: FileExplorerLeaf): void {
+	/**
+	 * Hides a sidecar from a given file explorer leaf
+	 * @param leaf The file explorer leaf the sidecar should be hidden form
+	 */
+	public hide(leaf: FileExplorerLeaf) {
 		if (!leaf) return;
 		// @ts-ignore
 		if (!leaf.view?.fileItems) return;
@@ -76,7 +80,6 @@ export default class Sidecar {
 	/**
      * Finds all tags in the file: Both the frontmatter and the body, and returns
      * them without duplicates and hashtags.
-     * @param cache The metadata cache of the file
      * @returns The tags, without hashtags and duplicates
      */
 	public getTags(): string[] {
@@ -106,7 +109,6 @@ export default class Sidecar {
 	/**
      * Gets the information from a tag in the frontmatter
      * @param tag The tag to get from the frontmatter
-     * @param app The app instance
      * @returns The data in the tag, or undefined if it does not exist
      */
 	public getFrontmatterTag(tag: string): unknown | undefined {
@@ -120,7 +122,7 @@ export default class Sidecar {
      * Sets the information in a tag in the frontmatter
      * @param tag The tag to set in the frontmatter
      * @param value The value to set
-     * @param app The app instance
+     * @param type The type of the frontmatter tag
      */
 	public async setFrontmatterTag(tag: string, value: unknown, 
 		type: "text" | "multitext" | "number" | "checkbox" | "date" | "datetime" | "aliases" | "tags" | undefined = undefined): Promise<void> {

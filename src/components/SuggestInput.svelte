@@ -5,7 +5,7 @@ MIT License Copyright (c) 2024 Agustín Permission is hereby granted, free of ch
 
 Modified to:
 - Match obsidian UI to some extent
-- Remove not needed features
+- Remove unneeded features
 -->
 <script lang="ts">
 	let tag: string = "";
@@ -355,7 +355,7 @@ Modified to:
 		right: 0;
 		margin: 3px 0;
 		padding: 0px;
-		background: var(--background-modifier-form-field);
+		background: var(--dropdown-background);
 		border: var(--input-border-width) solid var(--background-modifier-border);
 		border-radius: var(--modal-radius);
 		max-height: 310px;
@@ -372,9 +372,11 @@ Modified to:
 	
 	:global(.MC-input-matchs li:hover,
 	.MC-input-matchs li.focus) {
-		background: var(--tag-background);
-		border: var(--tag-border-width) solid var(--tag-border-color);
-		color: var(--tag-color);
+		background: var(--dropdown-background);
+		background-position: var(--dropdown-background-position);
+		background-size: var(--dropdown-background-size);
+		mix-blend-mode: var(--dropdown-background-blend-mode);
+		size: var(--dropdown-background-size);
 		outline: none;
 	}
 	

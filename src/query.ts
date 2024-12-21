@@ -5,6 +5,10 @@ import type MediaFile from "./model/mediaFile";
 import { MediaTypes } from "./model/types/mediaTypes";
 import type MCImage from "./model/types/image/image";
 
+/**
+ * OrderBy options for the gallery.
+ * Options are in camelCase
+ */
 export enum OrderByOptions {
 	random = "random",
 	creationDate = "creationDate",
@@ -12,6 +16,9 @@ export enum OrderByOptions {
 	name = "name",
 }
 
+/**
+ * A query of media files
+ */
 export type QueryDetails = {
 	color: null | HexString, // null | HexString
 	folders: string[], // string[], if length == 0, all folders (formatted 'path/to/folder')
@@ -31,11 +38,7 @@ export type QueryDetails = {
 	},
 	orderIncreasing: boolean,
 	hasFrontMatter: string[], // list of frontMatter tags that should exist
-	// Potentially add an option to check for certain values as well
-	// Shouldn't be too hard to do, but let's get the above working first tbh
 }
-
-// TODO: Handle when a new media file has been added to the cache
 
 /**
  * An object to handle search queries for the cache
@@ -70,6 +73,10 @@ export default class Query {
 		this.files = [];
 	}
 
+	/**
+	 * Orders the files in the query according to the
+	 * OrderByOptions field in the QueryDetails
+	 */
 	public orderFiles() {
 		switch (this.query.orderBy.option) {
 			case OrderByOptions.creationDate:
@@ -92,6 +99,12 @@ export default class Query {
 		}
 	}
 
+	/**
+	 * Tests a given file and returns whether the file fits
+	 * the query
+	 * @param item The MediaFile to be tested
+	 * @returns Whether the file fits the query
+	 */
 	public async testFile(item: MediaFile): Promise<boolean> {
 		const mediaTypes = this.determineTypes();
 
@@ -228,6 +241,11 @@ export default class Query {
 		return true;
 	}
 
+	/**
+	 * Filters all mediafiles from the cache and returns the ones
+	 * that fit the query. Will wait for the cache to be ready
+	 * @returns All MediaFiles from the cache that fit the query
+	 */
 	public async getItems(): Promise<MediaFile[]> {
 		await this.cache.awaitReady();
 
@@ -250,6 +268,12 @@ export default class Query {
 		return found;
 	}
 
+	/**
+	 * Finds the types of files that the user could be querying based on the
+	 * parameters given in the query
+	 * @returns The possible types of files that can be queried with the current
+	 * query parameters
+	 */
 	private determineTypes(): MediaTypes[] {
 		if ((this.query.dimensions 
                 && this.query.dimensions.maxHeight !== Infinity

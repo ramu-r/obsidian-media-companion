@@ -15,6 +15,7 @@ export default class MediaFile {
      * Create a new MediaFile from a binary file
      * @param file The file to create a MediaFile from
      * @param app The app instance
+	 * @param sidecar The sidecar for the file, in case it already exists
      * @returns The created MediaFile
      */
 	public static async create(file: TFile, app: App, sidecar: TFile | null = null): Promise<MediaFile> {
@@ -30,6 +31,7 @@ export default class MediaFile {
      * @param f The MediaFile to fill
      * @param file The related binary file
      * @param app The app instance
+	 * @param sidecar The sidecar for the file, in case it already exists
      */
 	protected static async fill(f: MediaFile, file: TFile, app: App, sidecar: TFile | null = null): Promise<void> {
 		f.file = file;
@@ -40,12 +42,16 @@ export default class MediaFile {
 		await f.update();
 	}
 
+	/**
+	 * Finds the mediaType of the file based on the extension of the file
+	 * @returns The MediaType of the file
+	 */
 	public getType(): MediaTypes {
 		return getMediaType(this.file.extension);
 	}
 
 	/**
-     * Update a file after it has been edited
+     * To be called when a file has been updated
      */
 	public async update(): Promise<void> {
 		const last_updated = this.sidecar.getFrontmatterTag(MediaFile.last_updated_tag) as number;

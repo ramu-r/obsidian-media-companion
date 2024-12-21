@@ -1,6 +1,6 @@
 // The tags in the frontmatter that are reserved for other purposes
 // such as image width and height
-export const reservedImageTags: string[] = ["size", "shape", "colors"];
+export const reservedImageTags: string[] = ["MC-size", "MC-colors"];
 
 export const reservedFrontMatterTags: string[] = [...new Set([
 	...reservedImageTags,

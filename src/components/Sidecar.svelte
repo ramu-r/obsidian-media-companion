@@ -10,14 +10,16 @@
 	import pluginStore from "src/stores/pluginStore";
 	import MediaFileEmbed from "./MediaFileEmbed.svelte";
 	import { debounce } from "obsidian";
-
-    // Things that need to be done:
-    // - Frontmatter editing, if possible
     
     let file: MediaFile | null = null;
     let app: App = get(appStore.app);
     let plugin: MediaCompanion = get(pluginStore.plugin);
 
+	// These file names and/or characters are not supported on various platforms, and should therefore
+	// not be used by users when renaming the files.
+	// While obsidian does not prevent users from using "^" and "#" while editing file names on desktop,
+	// it does when file names are edited on mobile, as these characters aren't supported on mobile
+	// We choose to completely disable them for the purposes of this plugin.
     const ILLEGAL_FILENAMES = ["CON", "PRN", "AUX", "NUL", "COM1", "COM2", "COM3", "COM4", "COM5", "COM6", "COM7", "COM8", "COM9",
                 "LPT1", "LPT2", "LPT3", "LPT4", "LPT5", "LPT6", "LPT7", "LPT8", "LPT9", ".", ".."]
     const ILLEGAL_FILENAME_CHARACTERS = ["\/", "<", ">", ":", "\"", "\\", "|", "?", "*", "[", "]", "^", "#"];
@@ -47,6 +49,8 @@
     // @ts-ignore
     plugin.mutationHandler.addEventListener("sidecar-edited", onExternalEdit);
 
+	// Will set the file title and the current file being edited to the correct
+	// information for the sake of seamless editing
     function onExternalRename(e: { detail: {file: MediaFile, oldPath: string}}) {
         if (e.detail.oldPath === file?.file.path) {
             file = e.detail.file;
@@ -54,6 +58,7 @@
         }
     }
 
+	// Fills the file with the new information when the sidecar has been edited
     function onExternalEdit(e: {detail: MediaFile}) {
         if (e.detail === file) {
             if (editorView) {
@@ -77,6 +82,7 @@
         }
     }
 
+	// Validates the currently given file name, and renames the file is the name is valid
     function renameFile() {
         if (!file) return;
 
@@ -88,10 +94,10 @@
             invalidName = false;
             return;
         } else if (ILLEGAL_FILENAMES.contains(trimmed) || trimmed.length === 0 || trimmed[trimmed.length - 1] === ".") {
-            console.error("Illegal filename");
+            console.error("[Media Companion]: Illegal filename, file not renamed");
             invalidName = true;
         } else if (app.vault.getAbstractFileByPathInsensitive(newFilePath)) {
-            console.error("File already exists");
+            console.error("[Media Companion]: File already exists, file not renamed");
             invalidName = true;
         } else {
             // Rename for the sidecar is managed already
@@ -110,6 +116,7 @@
             titleTextarea.blur();
         }
         if (ILLEGAL_FILENAME_CHARACTERS.contains(e.key)) {
+			// TODO: add some pop-up with information
             e.preventDefault();
         }
     }
@@ -122,6 +129,9 @@
         activeStore.file.subscribe(async (newFile) => {
             if (!newFile || !editorView) return; // If undefined, don't do anything
 
+			// Make sure the rename and file edits are finished up
+			// before we overwrite the file. This way the references are still
+			// correct
 			renameDebounce.run();
 			renameDebounce.cancel();
 			fileEditDebounce.run();
@@ -129,6 +139,8 @@
 
             invalidName = false;
 
+			// Disconnect and reconnect the observer because we're using
+			// the obsidian embed registry to create the new elements for us
             if (editorObserver) {
                 editorObserver.disconnect();
             }
@@ -154,11 +166,13 @@
         if (file) {
             editorView.set(await app.vault.read(file.sidecar.file), true);
         }
+		// Stop displaying the title element; We use a custom one
         editorView.inlineTitleEl.style.display = "none";
         editorView.showEditor();
     });
 
     onDestroy(() => {
+		// Make sure everything gets saved, and only then remove the debounces
 		renameDebounce.run();
 		renameDebounce.cancel();
 

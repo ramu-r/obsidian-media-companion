@@ -34,6 +34,8 @@
 	onMount(() => {
 		setEmbed();
 
+		// If the current file is a video, set an event listener for the dimensions
+		// being known, so recomputeDimensions can be called
 		const videoEl = containerEl.getElementsByTagName("video")[0];
 		if (videoEl) {
 			videoEl.addEventListener("loadedmetadata", () => recomputeDimensions(), false);
@@ -68,5 +70,6 @@
 		color: var(--tag-color);
 		text-align: center;
 		align-content: center;
+		margin: 4px;
 	}
 </style>

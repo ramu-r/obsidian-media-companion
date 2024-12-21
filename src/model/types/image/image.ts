@@ -3,6 +3,9 @@ import type { App, TFile } from "obsidian";
 import { extractColors } from "extract-colors";
 
 export default class MCImage extends MediaFile {
+	// The reserved tags for this type
+	// when editing these, they should also be renamed in
+	// frontmatter.ts
 	public static size_tag = "MC-size";
 	public static colors_tag = "MC-colors";
 
@@ -12,12 +15,13 @@ export default class MCImage extends MediaFile {
      * Create a new MCImage from a file: Use as constructor
      * @param file The file to create the image from
      * @param app The app instance
+	 * @param sidecar The sidecar file, if it already exists
      * @returns The created MCImage
      */
-	public static async create(file: TFile, app: App): Promise<MCImage> {
+	public static async create(file: TFile, app: App, sidecar: TFile | null = null): Promise<MCImage> {
 		const f = new MCImage();
 
-		await MCImage.fill(f, file, app)
+		await MCImage.fill(f, file, app, sidecar)
 
 		return f;
 	}
@@ -27,20 +31,20 @@ export default class MCImage extends MediaFile {
      * @param f The file to fill
      * @param file The related binary file
      * @param app The app instance
+	 * @param sidecar The sidecar file, if it already exists
      */
-	protected static async fill(f: MCImage, file: TFile, app: App): Promise<void> {
-		await super.fill(f, file, app);
+	protected static async fill(f: MCImage, file: TFile, app: App, sidecar: TFile | null = null) {
+		await super.fill(f, file, app, sidecar);
 	}
 
 	/**
-     * Extracts the colors from a given image file
-     * @param file The file to read the colors from
-     * @param app The app instance
+     * Extracts the colors from the image file
      * @returns The colors, in the format dictated by the extract-colors package
      */
-	private async readColors(): Promise<unknown> {
+	private async readColors(): Promise<{h: number, s: number, l: number, area: number}[]> {
 		const extracted = await extractColors(
 			this.app.vault.getResourcePath(this.file),
+			// 1/4th of defualt pixels to speed up the proces
 			{pixels: 16000});
 		const colors = [];
 
@@ -56,6 +60,11 @@ export default class MCImage extends MediaFile {
 		return colors;
 	}
 
+	/**
+	 * Finds the cahced colors of the image. If they aren't already registered,
+	 * they will be extracted and saved when this is called.
+	 * @returns The cached colors of the image
+	 */
 	public async getCachedColors(): Promise<unknown> {
 		if (!this.sidecar.getFrontmatterTag(MCImage.colors_tag)) {
 			await this.setColors();
@@ -64,6 +73,9 @@ export default class MCImage extends MediaFile {
 		return this.sidecar.getFrontmatterTag(MCImage.colors_tag);
 	}
 
+	/**
+	 * Extracts and sets the colors for the image
+	 */
 	private async setColors() {
 		const colors = await this.readColors();
 		await this.sidecar.setFrontmatterTag(MCImage.colors_tag, colors);
@@ -97,6 +109,11 @@ export default class MCImage extends MediaFile {
 		return { width: image.naturalWidth, height: image.naturalHeight };
 	}
 
+	/**
+	 * Finds and returns the size of the image in pixels.
+	 * If there is no size in the cache yet, this will be computed when this is called.
+	 * @returns The cached size
+	 */
 	public async getCachedSize(): Promise<{ width: number, height: number } | undefined> {
 		const value = this.sidecar.getFrontmatterTag(MCImage.size_tag);
         
@@ -107,13 +124,16 @@ export default class MCImage extends MediaFile {
 		return MCImage.parseSize(this.sidecar.getFrontmatterTag(MCImage.size_tag));
 	}
 
+	/**
+	 * Finds and sets the size of the image to the cache
+	 */
 	private async setSize() {
 		const size = await this.readSize();
 		await this.sidecar.setFrontmatterTag(MCImage.size_tag, [size.width, size.height]);
 	}
 
 	/**
-     * Update the information stored about the file
+     * To be called when the file is updated
      */
 	public async update() { 
 		// If last_updated is older than when the files last updated, update regardless
@@ -122,6 +142,7 @@ export default class MCImage extends MediaFile {
 		// Or, if one of our things is not cached / can't be parsed
 		const last_updated = this.sidecar.getFrontmatterTag(MediaFile.last_updated_tag) as number;
 
+		// These methods will set as well when the tag cannot be found
 		await this.getCachedColors(); 
 		await this.getCachedSize();
 

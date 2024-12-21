@@ -124,7 +124,7 @@ export default class MutationHandler extends EventTarget {
 		}
 
 		if (!cacheFile) {
-			this.createMediaFile(file).then((mediaFile) => {
+			this.createMediaFile(file, sidecar).then((mediaFile) => {
 				if (mediaFile) {
 					this.dispatchEvent(new CustomEvent("file-moved", { detail: {file: mediaFile, oldPath: oldpath} }));
 				}
@@ -144,6 +144,13 @@ export default class MutationHandler extends EventTarget {
 		});
 	}
 
+	/**
+	 * Created a MediaFile of the correct type. E.g.; For an image, an MCImage will be made.
+	 * @param file The file to be made a mediaFile for. Will be checked to be of type TFile and whether its
+	 * extension is in the current plugin settings
+	 * @param sidecar The sidecar file, if there is already one. For example, if the file has been moved.
+	 * @returns The created media file, of the correct type, or null if none was created
+	 */
 	private async createMediaFile(file: TAbstractFile, sidecar: TFile | null = null): Promise<MediaFile | null> {
 		if (!(file instanceof TFile) || !this.plugin.settings.extensions.contains(file.extension.toLowerCase())) return null;
 
@@ -154,10 +161,10 @@ export default class MutationHandler extends EventTarget {
 
 		switch (getMediaType(file.extension)) {
 			case MediaTypes.Image:
-				mediaFile = await MCImage.create(file, this.app);
+				mediaFile = await MCImage.create(file, this.app, sidecar);
 				break;
 			case MediaTypes.Unknown:
-				mediaFile = await MediaFile.create(file, this.app);
+				mediaFile = await MediaFile.create(file, this.app, sidecar);
 				break;
 		}
 

@@ -3,8 +3,6 @@
  */
 export enum MediaTypes {
 	Image = "image",
-	//Video = "video",
-	//Audio = "audio",
 	Unknown = "unknown",
 }
 

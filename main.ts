@@ -1,7 +1,6 @@
 import { App, debounce, Plugin, PluginSettingTab, Setting, WorkspaceLeaf } from 'obsidian';
 import { GalleryView, VIEW_TYPE_GALLERY } from 'src/views/gallery-view';
 import { DEFAULT_SETTINGS } from 'src/settings'
-
 import type { MediaCompanionSettings } from 'src/settings';
 import Cache from 'src/cache';
 import MutationHandler from 'src/mutationHandler';
@@ -25,12 +24,15 @@ export default class MediaCompanion extends Plugin {
 		this.cache = new Cache(this.app, this);
 		this.mutationHandler = new MutationHandler(this.app, this, this.cache);
 
-		// We want to register our views here but only start rendering them once the cache is initialized
+		// Views should be registered AFTER the cache object and mutationHandler
+		// are initialized
 		this.registerViews();
 
 		this.app.workspace.onLayoutReady(async () => {
 			await this.cache.initialize();
 
+			// Register events only after the cache is initialized and the
+			// layout is ready to avoid many events being sent off
 			this.registerEvents();
 
 			// @ts-ignore - Need to set this manually, unsure if there's a better way
@@ -40,8 +42,6 @@ export default class MediaCompanion extends Plugin {
 		this.addRibbonIcon('image', 'Open Gallery', (_: MouseEvent) => {
 			this.createGallery();
 		});
-
-		await this.registerCommands();
 
 		this.addSettingTab(new MediaCompanionSettingTab(this.app, this));
 	}
@@ -73,8 +73,6 @@ export default class MediaCompanion extends Plugin {
 			}
 		});
 	}
-
-	async onunload() {}
 
 	registerViews() {
 		this.registerView(VIEW_TYPE_GALLERY, (leaf) => new GalleryView(leaf, this));
@@ -111,8 +109,6 @@ export default class MediaCompanion extends Plugin {
 		this.app.workspace.revealLeaf(leaf);
 	}
 
-	async registerCommands() { }
-
 	async loadSettings() {
 		this.settings = Object.assign({}, DEFAULT_SETTINGS, await this.loadData());
 	}
@@ -132,6 +128,7 @@ class MediaCompanionSettingTab extends PluginSettingTab {
 
 	display(): void {
 		const { containerEl } = this;
+
 		const extensionDebounce = debounce(async (value: string) => {
 			this.plugin.settings.extensions = value.split(',')
 				.map((ext) => ext.trim())

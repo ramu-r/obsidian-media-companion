@@ -69,6 +69,8 @@ if (prod) {
 } else {
 	await context.watch();
 	
+	// Ugly solution to rename the file on watch as well
+	// Wasn't able to find a different solution
 	setInterval(async () => {
 		const defaultCssOutput = outfile.replace(/\.js$/, ".css");
 

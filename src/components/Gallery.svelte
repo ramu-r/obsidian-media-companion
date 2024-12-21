@@ -18,8 +18,6 @@
     let plugin: MediaCompanion = get(pluginStore.plugin);
     let app: App = get(appStore.app);
 
-    plugin.mutationHandler.addEventListener("file-created", (file) => {})
-
     type DisplayItem = {
         uri: string;
         file: MediaFile;
@@ -71,8 +69,8 @@
     const groupSize: number = 20;
     
     const resizeObserver = new ResizeObserver(() => onResize());
-
-    // @ts-ignore
+	
+	// @ts-ignore
     plugin.mutationHandler.addEventListener("file-created", onNewFile);
     // @ts-ignore
     plugin.mutationHandler.addEventListener("file-removed", onFileRemoved);
@@ -94,6 +92,9 @@
         };
     }
 
+	// Checks whether the file is already in the query and whether it should be depending
+	// on the query parameters. Will remove and/or add the file where needed, and reload
+	// the masonry
     function onFileMoved(e: { detail: {file: MediaFile, oldPath: string} }) {
         let allFilesIndex = allItems.findIndex((item) => item.file.path === e.detail.oldPath);
         let itemsIndex = items.findIndex((item) => item.file.file.path === e.detail.oldPath);
@@ -126,8 +127,7 @@
     }
 
     function onNewFile(e: { detail: MediaFile }) {
-        // Check if the mediaFile is already in allItems or 
-
+        // Check if the mediaFile is already in allItems or should be added
         if (query) {
             query.testFile(e.detail).then((res) => {
                 if (res) {
@@ -139,6 +139,7 @@
         }
     }
 
+	// Removes the file if it's in our current list and then reloads the masonry
     function onFileRemoved(e: { detail: MediaFile }) {
         allItems = allItems.filter((item) => item !== e.detail);
         items = items.filter((item) => item.file !== e.detail);
@@ -146,6 +147,8 @@
         reloadMasonry();
     }
 
+	// Same as onFileMoved; Checks the new file according to the query and removes/adds it
+	// as needed
     function onFileChanged(e: { detail: MediaFile }) {
         let allFilesIndex = allItems.findIndex((item) => item === e.detail);
         let itemsIndex = items.findIndex((item) => item.file === e.detail);
@@ -455,8 +458,8 @@
     :global(button.MC-gallery-item) {
         all: unset;
         padding: 0px;
-        /* width: 20%; */
         box-sizing: border-box;
+		background-color: var(--background-primary);
     }
 
 	:global(.MC-gallery-item div) {
