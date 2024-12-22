@@ -1,9 +1,9 @@
 {
 	"id": "media-companion",
 	"name": "Media Companion",
-	"version": "0.1.2",
-	"minAppVersion": "0.17.7",
-	"description": "A companion for (binary) media files",
+	"version": "0.1.3",
+	"minAppVersion": "0.18.0",
+	"description": "A companion for media files",
 	"author": "Nick de Bruin",
 	"authorUrl": "https://nickdebruin.me",
 	"fundingUrl": "",
