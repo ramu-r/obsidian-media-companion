@@ -1,9 +1,9 @@
 # Media Companion Plugin for Obsidian
 
-> [!DANGER]
+> [!CAUTION]
 > This plugin creates and edits a file for each media file. Before using it on any serious vault, **make a backup**.
 
-> [!CAUTION]
+> [!WARNING]
 > The file types this plugin is known to work for have been added in the default settings of the plugin.
 > Other formats that Obsidian supports *may* work but they are **not** (yet) officially supported.
 > Video files, for example, can currently break the gallery.
