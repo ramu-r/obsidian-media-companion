@@ -53,6 +53,10 @@ export default class Cache {
 		}
 
 		this.building = true;
+
+		while (this.app.metadataCache.inProgressTaskCount > 0) {
+			await new Promise(resolve => setTimeout(resolve, 100));
+		}
         
 		let files = this.app.vault.getFiles();
 

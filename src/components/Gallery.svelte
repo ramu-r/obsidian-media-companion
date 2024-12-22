@@ -320,7 +320,7 @@
 </div>
 <div class="MC-gallery-properties">
 	<div class="MC-left-section">
-		<input type="color" name="Color" bind:value={searchColor} on:input={onSearchChange}>
+		<input type="color" name="Color" class="MC-color-picker" bind:value={searchColor} on:input={onSearchChange}>
 		<button on:click={()=>{searchColor = ""; onSearchChange()}} class="MC-clear-btn">&times;</button>
 	</div>
 	<div class="MC-center-section">
@@ -360,11 +360,18 @@
 		padding: 5px;
 	}
 
+	:global(input[type="color"].MC-color-picker) {
+		box-shadow: inset 0 0 0 10px var(--interactive-accent);
+		border-radius: 1em;
+	}
+
 	:global(.MC-gallery-properties) {
     	display: flex;
+		flex-flow: row wrap;
     	justify-content: space-between;
     	align-items: center;
     	width: 100%;
+		max-width: 100%;
 		padding: 5px;
 	}
 
