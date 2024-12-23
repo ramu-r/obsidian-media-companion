@@ -3,9 +3,8 @@
 	"name": "Media Companion",
 	"version": "0.1.3",
 	"minAppVersion": "0.18.0",
-	"description": "A companion for media files",
+	"description": "A companion for media files. Creates a searchable gallery and sidecars for media files.",
 	"author": "Nick de Bruin",
 	"authorUrl": "https://nickdebruin.me",
-	"fundingUrl": "",
 	"isDesktopOnly": false
 }

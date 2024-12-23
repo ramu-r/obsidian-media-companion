@@ -144,7 +144,7 @@ class MediaCompanionSettingTab extends PluginSettingTab {
 
 		new Setting(containerEl)
 			.setName('Hide sidecar files')
-			.setDesc('Hide sidecar files in the file explorer (Recommended)')
+			.setDesc('(Recommended) Hide sidecar files in the file explorer.')
 			.addToggle(toggle => toggle
 				.setValue(this.plugin.settings.hideSidecar)
 				.onChange(async (value) => {
@@ -154,7 +154,7 @@ class MediaCompanionSettingTab extends PluginSettingTab {
 
 		new Setting(containerEl)
 			.setName('Extensions')
-			.setDesc('Extensions to be considered as media files, separated by commas')
+			.setDesc('Extensions to be considered as media files, separated by commas.')
 			.addText(text => text
 				.setPlaceholder('jpg, png, gif')
 				.setValue(this.plugin.settings.extensions.join(', '))
