@@ -8,6 +8,8 @@ Modified to:
 - Remove unneeded features
 -->
 <script lang="ts">
+	import { isArray } from "util";
+
 	let tag: string = "";
 	let arrelementsmatch: { label: string, search: string }[] = [];
 	let autoCompleteIndex = -1;
@@ -21,7 +23,7 @@ Modified to:
 	export let selected: string[] = [];
 	export let maxTags: number | undefined = undefined;
 	export let placeholder: string = "";
-	export let autoComplete: string[] | boolean = false;
+	export let autoComplete: string[] | (() => string[]) | boolean = false;
 	export let autoCompleteFilter: boolean = true;
 	export let name: string = "MC-input";
 	export let id: string = uniqueID();
@@ -201,7 +203,14 @@ Modified to:
 	
 		// @ts-ignore
 		let value = input ? input.target?.value : "";
-		let autoCompleteValues = autoComplete as string[]; // At this point we can be sure
+
+		let autoCompleteValues = [];
+
+		if (Array.isArray(autoComplete)) {
+			autoCompleteValues = autoComplete as string[];
+		} else {
+			autoCompleteValues = (autoComplete as () => string[])();
+		}
 			
 		// Escape
 		if ((minChars > 0 && value == "") || (input && input.keyCode === 27) || value.length < minChars ) {

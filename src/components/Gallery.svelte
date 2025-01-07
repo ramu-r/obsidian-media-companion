@@ -292,10 +292,6 @@
     function onSearchChange() {
         searchDebounce();
     }
-
-	// Make it so these actually update when things change
-	let allFolders: string[] = app.vault.getAllFolders().map(folder => folder.path);
-	let allTags: string[] = Object.keys(app.metadataCache.getTags());
 </script>
 
 <div class="MC-gallery-view-container">
@@ -305,19 +301,19 @@
 <div class="MC-gallery-search MC-collapsible" class:MC-collapsed={isCollapsed}>
 	<SuggestInput 
 		selected={searchFolders}
-		autoComplete={allFolders} 
+		autoComplete={() => app.vault.getAllFolders().map(folder => folder.path)} 
 		labelText={"Folders"} 
 		onChange={onSearchChange}
 		/>
 	<SuggestInput
 		selected={searchTags}
-		autoComplete={allTags}
+		autoComplete={() => Object.keys(app.metadataCache.getTags())}
 		labelText={"Tags"}
 		onChange={onSearchChange}
 		/>
 	<SuggestInput
 		selected={searchFileTypes}
-		autoComplete={plugin.settings.extensions}
+		autoComplete={() => plugin.settings.extensions}
 		labelText={"File types"}
 		onChange={onSearchChange}
 		/>
