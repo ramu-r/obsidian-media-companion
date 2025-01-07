@@ -215,7 +215,7 @@ export default class Query {
 			let hit = false;
 
 			for (const tag of this.query.tags) {
-				if (item.sidecar.getTags().contains(tag)) {
+				if (item.sidecar.getTags().contains(tag.toLocaleLowerCase())) {
 					hit = true;
 					break;
 				}
