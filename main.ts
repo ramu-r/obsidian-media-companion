@@ -155,7 +155,7 @@ class MediaCompanionSettingTab extends PluginSettingTab {
 		new Setting(containerEl)
 			.setName('Extensions')
 			.setDesc('Extensions to be considered as media files, separated by commas.')
-			.addText(text => text
+			.addTextArea(text => text
 				.setPlaceholder('jpg, png, gif')
 				.setValue(this.plugin.settings.extensions.join(', '))
 				.onChange(async (value) => {
