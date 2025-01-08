@@ -39,7 +39,7 @@ export default class Cache {
 	}
 
 	/**
-     * Initialize the cahce with all the (supported) files in the vault
+     * Initialize the cache with all the (supported) files in the vault
      */
 	public async initialize(): Promise<void> {
 		if (this.initialized) return;

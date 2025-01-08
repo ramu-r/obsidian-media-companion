@@ -4,7 +4,7 @@
 	import pluginStore from "src/stores/pluginStore";
 	import Query, { OrderByOptions } from "src/query";
 	import { get } from "svelte/store";
-	import { type App } from "obsidian";
+	import { setIcon, type App } from "obsidian";
 	import appStore from "src/stores/appStore";
     import Masonry from "masonry-layout";
 	import type MediaFile from "src/model/mediaFile";
@@ -60,6 +60,8 @@
     let masonry: Masonry;
     let masonryContainer: HTMLDivElement;
     let scrollContainer: HTMLElement;
+	let collapseButton: HTMLElement;
+	let sortOrderButton: HTMLElement;
     let items: DisplayItem[] = [];
     let allItems: MediaFile[] = [];
     let query: Query = new Query(plugin.cache);
@@ -81,8 +83,17 @@
     // @ts-ignore
     plugin.mutationHandler.addEventListener("sidecar-edited", onFileChanged);
 
+	function setCollapseArrow() {
+		if (isCollapsed) {
+			setIcon(collapseButton, "arrow-big-down");
+		} else {
+			setIcon(collapseButton, "arrow-big-up");
+		}
+	}
+
 	function toggleCollapse() {
 		isCollapsed = !isCollapsed;
+		setCollapseArrow();
 	}
 
     function getDisplayItem(file: MediaFile): DisplayItem {
@@ -251,6 +262,8 @@
 
     onMount(async () => {
         await plugin.cache.initialize();
+		setCollapseArrow();
+		setIcon(sortOrderButton, "arrow-down-up");
         allItems = await query.getItems();
 
         masonry = new Masonry(masonryContainer, {
@@ -333,12 +346,8 @@
 				<option value={option}>{option.replace(/([A-Z])/g, ' $1').toLowerCase().replace(/^./, str => str.toUpperCase())}</option>
 			{/each}
 		</select>
-		<button class="MC-sort-toggle" on:click={() => { onSearchChange(); orderIncreasing = !orderIncreasing; }}>
-			<i class={orderIncreasing ? 'up' : 'down'}></i>
-		</button>
-		<button on:click={toggleCollapse} class="MC-collapse-button">
-			{isCollapsed ? "⮟" : "⮝"}
-		</button>
+		<button class="MC-sort-toggle" on:click={() => { onSearchChange(); orderIncreasing = !orderIncreasing; }} bind:this={sortOrderButton}></button>
+		<button on:click={toggleCollapse} bind:this={collapseButton} class="MC-collapse-button"></button>
 	</div>
 </div>
 <hr class="MC-gallery-search-hr">
