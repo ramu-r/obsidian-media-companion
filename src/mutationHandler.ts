@@ -89,7 +89,7 @@ export default class MutationHandler extends EventTarget {
 		// Get sidecar file and remove it
 		const sidecar = this.app.vault.getFileByPath(`${file.path}.sidecar.md`);
 		if (sidecar) {
-			this.app.vault.delete(sidecar).then(() => {});
+			this.app.fileManager.trashFile(sidecar).then(() => {});
 		}
 	}
 
