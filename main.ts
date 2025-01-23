@@ -39,7 +39,7 @@ export default class MediaCompanion extends Plugin {
 			this.app.metadataTypeManager.properties[MediaFile.last_updated_tag.toLowerCase()].type = "datetime";
 		});
 
-		this.addRibbonIcon('image', 'Open Gallery', (_: MouseEvent) => {
+		this.addRibbonIcon('image', 'Open gallery', (_: MouseEvent) => {
 			this.createGallery();
 		});
 
