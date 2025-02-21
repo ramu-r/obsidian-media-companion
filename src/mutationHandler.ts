@@ -45,7 +45,7 @@ export default class MutationHandler extends EventTarget {
 			mediaPath = file.path.substring(0, file.path.length - 11);
 		}
 
-		const f = this.cache.getFile(mediaPath)
+		const f = this.cache.getFile(mediaPath);
         
 		if (f) {
 			f.update().then(() => {});
@@ -78,7 +78,7 @@ export default class MutationHandler extends EventTarget {
 		if (!this.plugin.settings.extensions.contains(file.extension.toLowerCase())) return;
 
 		// get the file
-		const f = this.cache.getFile(file.path)
+		const f = this.cache.getFile(file.path);
         
 		if (f) {
 			this.dispatchEvent(new CustomEvent("file-deleted", { detail: f }));
