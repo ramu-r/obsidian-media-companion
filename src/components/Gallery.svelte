@@ -11,9 +11,9 @@
     import imagesLoaded from "imagesloaded";
 	import activeStore from "src/stores/activeStore";
 	import type { Shape } from "src/model/types/shape";
-	import SuggestInput from "./SuggestInput.svelte";
 	import MediaFileEmbed from "./MediaFileEmbed.svelte"
 	import { debounce } from "obsidian";
+	import IncludeSelect from "./search/IncludeSelect.svelte";
 
     let plugin: MediaCompanion = get(pluginStore.plugin);
     let app: App = get(appStore.app);
@@ -24,43 +24,24 @@
     }
 
     let elementSize: number = 200;
-
-    let searchDebounce = debounce(async () => {
-            items = [];
-            currentGroup = 0;
-            query = new Query(plugin.cache, {
-                color: searchColor,
-                folders: searchFolders,
-                name: "",
-                tags: searchTags.map(tag => tag.startsWith('#') ? tag.slice(1) : tag),
-                fileTypes: searchFileTypes,
-                shape: searchShapes,
-                dimensions: null, 
-                orderBy: {
-                    option: orderBy,
-                    value: ""
-                },
-                orderIncreasing: orderIncreasing,
-                hasFrontMatter: []
-            });
-            allItems = await query.getItems();
-            await loadNextGroup();
-			reloadMasonry();
-		}, 300, true);
     let searchColor: string = "";
-    let searchFolders: string[] = [];
-    let searchTags: string[] = [];
-    let searchFileTypes: string[] = [];
     let searchShapes: Shape[] = [];
     let orderBy: OrderByOptions = OrderByOptions.name;
     let orderIncreasing: boolean = true;
 
-	let isCollapsed: boolean = true;
+	let possiblePaths: [string, number][] = [];
+	let includedPaths: string[] = [];
+	let excludedPaths: string[] = [];
+	let possibleTags: [string, number][] = [];
+	let includedTags: string[] = [];
+	let excludedTags: string[] = [];
+	let possibleExtensions: [string, number][] = [];
+	let includedExtensions: string[] = [];
+	let excludedExtensions: string[] = [];
 
     let masonry: Masonry;
     let masonryContainer: HTMLDivElement;
     let scrollContainer: HTMLElement;
-	let collapseButton: HTMLElement;
 	let sortOrderButton: HTMLElement;
     let items: DisplayItem[] = [];
     let allItems: MediaFile[] = [];
@@ -83,19 +64,6 @@
     // @ts-ignore
     plugin.mutationHandler.addEventListener("sidecar-edited", onFileChanged);
 
-	function setCollapseArrow() {
-		if (isCollapsed) {
-			setIcon(collapseButton, "arrow-big-down");
-		} else {
-			setIcon(collapseButton, "arrow-big-up");
-		}
-	}
-
-	function toggleCollapse() {
-		isCollapsed = !isCollapsed;
-		setCollapseArrow();
-	}
-
     function getDisplayItem(file: MediaFile): DisplayItem {
         return {
             uri: app.vault.getResourcePath(file.file),
@@ -107,6 +75,8 @@
 	// on the query parameters. Will remove and/or add the file where needed, and reload
 	// the masonry
     function onFileMoved(e: { detail: {file: MediaFile, oldPath: string} }) {
+		updateSearchPossibilities();
+
         let allFilesIndex = allItems.findIndex((item) => item.file.path === e.detail.oldPath);
         let itemsIndex = items.findIndex((item) => item.file.file.path === e.detail.oldPath);
 
@@ -138,6 +108,8 @@
     }
 
     function onNewFile(e: { detail: MediaFile }) {
+		updateSearchPossibilities();
+
         // Check if the mediaFile is already in allItems or should be added
         if (query) {
             query.testFile(e.detail).then((res) => {
@@ -152,6 +124,8 @@
 
 	// Removes the file if it's in our current list and then reloads the masonry
     function onFileRemoved(e: { detail: MediaFile }) {
+		updateSearchPossibilities();
+
         allItems = allItems.filter((item) => item !== e.detail);
         items = items.filter((item) => item.file !== e.detail);
         items = [...items];
@@ -161,6 +135,8 @@
 	// Same as onFileMoved; Checks the new file according to the query and removes/adds it
 	// as needed
     function onFileChanged(e: { detail: MediaFile }) {
+		updateSearchPossibilities();
+
         let allFilesIndex = allItems.findIndex((item) => item === e.detail);
         let itemsIndex = items.findIndex((item) => item.file === e.detail);
 
@@ -260,11 +236,18 @@
         return scrollContainer.scrollHeight > scrollContainer.clientHeight && scrollContainer.clientHeight != 0;
     }
 
+	function updateSearchPossibilities() {
+		possiblePaths = [...Object.entries(plugin.cache.paths)];
+		possibleTags = [...Object.entries(plugin.cache.tags)];
+		possibleExtensions = [...Object.entries(plugin.cache.extensions)];
+	}
+
     onMount(async () => {
         await plugin.cache.initialize();
-		setCollapseArrow();
-		setIcon(sortOrderButton, "arrow-down-up");
+		//setIcon(sortOrderButton, "arrow-down-up");
         allItems = await query.getItems();
+
+		updateSearchPossibilities();
 
         masonry = new Masonry(masonryContainer, {
             transitionDuration: 0, // Turn off animations; Looks weird when adding items
@@ -282,6 +265,7 @@
 
     onDestroy(() => {
         scrollContainer.removeEventListener("scroll", onScroll);
+
         if (resizeObserver) {
             resizeObserver.disconnect();
         }
@@ -302,36 +286,65 @@
         activeStore.file.set(file);
     }
 
+	let searchDebounce = debounce(async () => {
+        items = [];
+        currentGroup = 0;
+        query = new Query(plugin.cache, {
+            color: searchColor,
+            folders: includedPaths,
+            name: "",
+            tags: includedTags,
+            fileTypes: includedExtensions,
+            shape: searchShapes,
+            dimensions: null, 
+            orderBy: {
+                option: orderBy,
+                value: ""
+            },
+            orderIncreasing: orderIncreasing,
+            hasFrontMatter: []
+        });
+        allItems = await query.getItems();
+        await loadNextGroup();
+		reloadMasonry();
+	}, 300, true);
+
     function onSearchChange() {
         searchDebounce();
     }
+
 </script>
 
 <div class="MC-gallery-view-container">
 {#await plugin.cache.initialize()}
     <h1 class="MC-gallery-loading">Loading cache...</h1>
 {:then}
-<div class="MC-gallery-search MC-collapsible" class:MC-collapsed={isCollapsed}>
-	<SuggestInput 
-		selected={searchFolders}
-		autoComplete={() => app.vault.getAllFolders().map(folder => folder.path)} 
-		labelText={"Folders"} 
-		onChange={onSearchChange}
-		/>
-	<SuggestInput
-		selected={searchTags}
-		autoComplete={() => Object.keys(app.metadataCache.getTags())}
-		labelText={"Tags"}
-		onChange={onSearchChange}
-		/>
-	<SuggestInput
-		selected={searchFileTypes}
-		autoComplete={() => plugin.settings.extensions}
-		labelText={"File types"}
-		onChange={onSearchChange}
-		/>
+<div>
+	<div class="MC-gallery-search">
+		<IncludeSelect 
+			options={possiblePaths} 
+			bind:included={includedPaths} 
+			bind:excluded={excludedPaths}
+			icon="folder"
+			text="Paths"
+			updated={onSearchChange} />
+		<IncludeSelect 
+			options={possibleTags} 
+			bind:included={includedTags} 
+			bind:excluded={excludedTags}
+			icon="hash"
+			text="Tags"
+			updated={onSearchChange} />
+		<IncludeSelect 
+			options={possibleExtensions} 
+			bind:included={includedExtensions} 
+			bind:excluded={excludedExtensions}
+			icon="file-question"
+			text="Extension"
+			updated={onSearchChange} />
+	</div>
 </div>
-<div class="MC-gallery-properties">
+<!-- <div class="MC-gallery-properties">
 	<div class="MC-left-section">
 		<input type="color" name="Color" class="MC-color-picker" bind:value={searchColor} on:input={onSearchChange}>
 		<button on:click={()=>{searchColor = ""; onSearchChange()}} class="MC-clear-btn">&times;</button>
@@ -347,9 +360,8 @@
 			{/each}
 		</select>
 		<button class="MC-sort-toggle" on:click={() => { onSearchChange(); orderIncreasing = !orderIncreasing; }} bind:this={sortOrderButton}></button>
-		<button on:click={toggleCollapse} bind:this={collapseButton} class="MC-collapse-button"></button>
 	</div>
-</div>
+</div> -->
 <hr class="MC-gallery-search-hr">
 <div class="MC-gallery-container" bind:this={scrollContainer}>
     <div class="MC-gallery-masonry" bind:this={masonryContainer}>
@@ -456,6 +468,15 @@
     :global(.MC-gallery-search-hr) {
         margin: 4px;
     }
+
+	:global(.MC-gallery-search) {
+		overflow-x: scroll;
+		overflow-y: visible;
+		display: flex;
+		align-items: stretch;
+		gap: 5px;
+		padding-bottom: 5px;
+	}
 
     :global(.MC-gallery-loading) {
         text-align: center;

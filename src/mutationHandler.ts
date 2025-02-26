@@ -80,12 +80,11 @@ export default class MutationHandler extends EventTarget {
 
 		// get the file
 		const f = this.cache.getFile(file.path);
+		this.cache.removeFile(file);
         
 		if (f) {
 			this.dispatchEvent(new CustomEvent("file-deleted", { detail: f }));
 		}
-
-		this.cache.removeFile(file);
         
 		// Get sidecar file and remove it
 		const sidecar = this.app.vault.getFileByPath(`${file.path}${Sidecar.EXTENSION}`);
@@ -127,6 +126,7 @@ export default class MutationHandler extends EventTarget {
 		if (!cacheFile) {
 			this.createMediaFile(file, sidecar).then((mediaFile) => {
 				if (mediaFile) {
+					this.cache.fileMoved(mediaFile, oldpath);
 					this.dispatchEvent(new CustomEvent("file-moved", { detail: {file: mediaFile, oldPath: oldpath} }));
 				}
 			});
