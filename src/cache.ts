@@ -235,6 +235,19 @@ export default class Cache {
 		}
 	}
 
+	public sidecarUpdated(_: MediaFile) {
+		// Rebuild the entire cache for tags
+		this.tags = {};
+
+		for (const mFile of this.files) {
+			for (const tag of mFile.sidecar.getTags()) {
+				for (const path of this.getPathHierarchy(tag)) {
+					this.addCounter(this.tags, path);
+				}
+			}
+		}
+	}
+
 	private addCounter(counter: {[key: string]: number}, value: string) {
 		if (counter[value]) {
 			counter[value] += 1;

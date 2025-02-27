@@ -138,8 +138,8 @@
 		border-radius: var(--input-radius);
 		z-index: var(--layer-modal);
 		min-width: 150px; /* Ensure some width */
-		min-height: 3em;
-		max-width: 80%; /* Constrain max width for mobile */
+		min-height: 2em;
+		max-width: 60%; /* Constrain max width for mobile */
 		margin-top: 2px;
 		border: 1px solid var(--interactive-normal);
 	}

@@ -43,7 +43,7 @@ export default class MutationHandler extends EventTarget {
 
 		if (isMarkdown && !file.path.endsWith(Sidecar.EXTENSION)) return;
 		if (isMarkdown) {
-			mediaPath = file.path.substring(0, file.path.length - 11);
+			mediaPath = file.path.substring(0, file.path.length - Sidecar.EXTENSION.length);
 		}
 
 		const f = this.cache.getFile(mediaPath);
@@ -51,6 +51,7 @@ export default class MutationHandler extends EventTarget {
 		if (f) {
 			f.update().then(() => {});
 			if (isMarkdown) {
+				this.cache.sidecarUpdated(f);
 				this.dispatchEvent(new CustomEvent("sidecar-edited", { detail: f }));
 			} else {
 				this.dispatchEvent(new CustomEvent("file-edited", { detail: f }));
