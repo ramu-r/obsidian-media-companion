@@ -1,3 +1,4 @@
+import type MediaCompanion from "main";
 import type { App, TFile } from "obsidian";
 import type { FileExplorerLeaf } from "obsidian-typings";
 import pluginStore from "src/stores/pluginStore";
@@ -10,6 +11,7 @@ export default class Sidecar {
 	public mediaFile!: TFile;
 	public file!: TFile;
 	protected app!: App;
+	protected plugin!: MediaCompanion;
 
 	public static readonly EXTENSION = ".sidecar.md";
 
@@ -21,11 +23,12 @@ export default class Sidecar {
      * @param app The app instance
      * @returns The created sidecar
      */
-	public static async create(mediaFile: TFile, app: App, f: TFile | null = null): Promise<Sidecar> {
+	public static async create(mediaFile: TFile, app: App, plugin: MediaCompanion, f: TFile | null = null): Promise<Sidecar> {
 		const file = new Sidecar();
         
 		file.mediaFile = mediaFile;
 		file.app = app;
+		file.plugin = plugin;
 
 		await file.fill(f);
 
@@ -53,7 +56,7 @@ export default class Sidecar {
      */
 	private async createIfNotExists(): Promise<TFile> {
 		const file = this.app.vault.getFileByPath(`${this.mediaFile.path}${Sidecar.EXTENSION}`) ?? 
-            await this.app.vault.create(`${this.mediaFile.path}${Sidecar.EXTENSION}`, "");
+            await this.app.vault.create(`${this.mediaFile.path}${Sidecar.EXTENSION}`, this.plugin.settings.sidecarTemplate);
         
 		return file;
 	}

@@ -85,11 +85,11 @@ export default class Cache {
 
 			switch (getMediaType(file.extension)) {
 				case MediaTypes.Image:
-					mediaFile = await MCImage.create(file, this.app);
+					mediaFile = await MCImage.create(file, this.app, this.plugin);
 					break;
 				case MediaTypes.Unknown:
 				default:
-					mediaFile = await MediaFile.create(file, this.app);
+					mediaFile = await MediaFile.create(file, this.app, this.plugin);
 					break;
 			}
                 
@@ -140,11 +140,11 @@ export default class Cache {
 
 			switch (getMediaType(file.extension)) {
 				case MediaTypes.Image:
-					mediaFile = await MCImage.create(file, this.app);
+					mediaFile = await MCImage.create(file, this.app, this.plugin);
 					break;
 				case MediaTypes.Unknown:
 				default:
-					mediaFile = await MediaFile.create(file, this.app);
+					mediaFile = await MediaFile.create(file, this.app, this.plugin);
 					break;
 			}
                 
