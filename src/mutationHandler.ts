@@ -163,10 +163,10 @@ export default class MutationHandler extends EventTarget {
 
 		switch (getMediaType(file.extension)) {
 			case MediaTypes.Image:
-				mediaFile = await MCImage.create(file, this.app, sidecar);
+				mediaFile = await MCImage.create(file, this.app, this.plugin, sidecar);
 				break;
 			case MediaTypes.Unknown:
-				mediaFile = await MediaFile.create(file, this.app, sidecar);
+				mediaFile = await MediaFile.create(file, this.app, this.plugin, sidecar);
 				break;
 		}
 
