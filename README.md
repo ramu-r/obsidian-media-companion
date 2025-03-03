@@ -29,10 +29,6 @@ More complex searching can also be done, like searching by color (**without** us
 	- [ ] Video files (mp4, webm)
 	- [ ] Audio files (mp3, wav)
 	- [ ] 3d objects (obj, blender files, gltf)
-- [ ] Gallery UI overhaul
-	- [ ] Make the search more friendly on mobile
-	- [ ] Make the interface more managable
-	- [ ] Make everything look nicer in general
 
 ## Contributing
 
