@@ -4,7 +4,7 @@
 	import pluginStore from "src/stores/pluginStore";
 	import Query, { OrderByOptions } from "src/query";
 	import { get } from "svelte/store";
-	import { setIcon, type App } from "obsidian";
+	import { Platform, setIcon, type App } from "obsidian";
 	import appStore from "src/stores/appStore";
     import Masonry from "masonry-layout";
 	import type MediaFile from "src/model/mediaFile";
@@ -295,8 +295,10 @@
         await plugin.cache.initialize();
         allItems = await query.getItems();
 
-		setIcon(sizerMinus, "minus");
-		setIcon(sizerPlus, "plus"); 
+		if (sizerMinus && sizerPlus) {
+			setIcon(sizerMinus, "minus");
+			setIcon(sizerPlus, "plus"); 
+		}
 
 		updateSearchPossibilities();
 
@@ -422,7 +424,14 @@
 				bind:minY={minY}
 				bind:maxY={maxY}
 				updated={onSearchChange}/>
+			{#if Platform.isMobile}
+			<Order
+				bind:option={orderBy}
+				bind:orderIncreasing={orderIncreasing}
+				updated={onSearchChange} />
+			{/if}
 		</div>
+		{#if !Platform.isMobile}
 		<div class="MC-gallery-controls-right">
 			<div class="MC-gallery-sizer-icon" bind:this={sizerMinus}><span></span></div> 
 			<input class="MC-gallery-sizer" type="range" bind:value={elementSize} min={minElementSize} max={maxElementSize} on:input={() => reloadMasonry()}>
@@ -433,6 +442,7 @@
 				bind:orderIncreasing={orderIncreasing}
 				updated={onSearchChange} />
 		</div>
+		{/if}
 	</div>
 </div>
 <hr class="MC-gallery-search-hr">
