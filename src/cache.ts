@@ -83,17 +83,22 @@ export default class Cache {
 		for (const file of files) {
 			let mediaFile;
 
-			switch (getMediaType(file.extension)) {
-				case MediaTypes.Image:
-					mediaFile = await MCImage.create(file, this.app, this.plugin);
-					break;
-				case MediaTypes.Unknown:
-				default:
-					mediaFile = await MediaFile.create(file, this.app, this.plugin);
-					break;
+			try {
+				switch (getMediaType(file.extension)) {
+					case MediaTypes.Image:
+						mediaFile = await MCImage.create(file, this.app, this.plugin);
+						break;
+					case MediaTypes.Unknown:
+					default:
+						mediaFile = await MediaFile.create(file, this.app, this.plugin);
+						break;
+				}
+
+				this.addFile(mediaFile);
+			} catch (e) {
+				console.log(`Failed on ${file.name}`);
+				console.log(e);
 			}
-                
-			this.addFile(mediaFile);
 
 			total_done++;
 			notice.setMessage(`Media Companion: ${total_done}/${files.length} files processed\nProcessing may take a while if many new files have been added`);
