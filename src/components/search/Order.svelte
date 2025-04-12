@@ -37,7 +37,7 @@
 
 <Popup {icon} {text} {active}>
 	<div class="MC-order-container">
-		<select bind:value={option} on:change={updated}>
+		<select class="dropdown" bind:value={option} on:change={updated}>
 			{#each Object.values(OrderByOptions) as option}
 				<option value={option}>{option.replace(/([A-Z])/g, ' $1').toLowerCase().replace(/^./, str => str.toUpperCase())}</option>
 			{/each}
@@ -61,5 +61,13 @@
 	:global(.MC-order-container select) {
 		box-shadow: none;
 		border-radius: 0;
+	}
+
+	:global(.MC-order-container .dropdown):hover {
+		box-shadow: none;
+	}
+
+	:global(.MC-order-container .dropdown):focus {
+		box-shadow: none;
 	}
 </style>
