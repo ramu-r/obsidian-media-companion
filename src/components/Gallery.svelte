@@ -17,6 +17,7 @@
 	import ColourPicker from "./search/ColourPicker.svelte";
 	import Resolution from "./search/Resolution.svelte";
 	import Order from "./search/Order.svelte";
+	import DateRange from "./search/DateRange.svelte";
 
     let plugin: MediaCompanion = get(pluginStore.plugin);
     let app: App = get(appStore.app);
@@ -41,6 +42,11 @@
 	let maxX: number | null = null;
 	let minY: number | null = null;
 	let maxY: number | null = null;
+	let smtime: string | null = null;
+	let emtime: string | null = null;
+	let sctime: string | null = null;
+	let ectime: string | null = null;
+
 
 	let elementSize: number = 200;
 	let minElementSize: number = 100;
@@ -372,6 +378,12 @@
 				minHeight: minY,
 				maxHeight: maxY
 			}, 
+			date: {
+				startCtime: sctime ? new Date(sctime) : null,
+				endCtime: ectime ? new Date(ectime) : null,
+				startMtime: smtime ? new Date(smtime) : null,
+				endMtime: emtime ? new Date(emtime) : null
+			},
             orderBy: orderBy,
             orderIncreasing: orderIncreasing,
         });
@@ -423,6 +435,12 @@
 				bind:maxX={maxX}
 				bind:minY={minY}
 				bind:maxY={maxY}
+				updated={onSearchChange}/>
+			<DateRange
+				bind:smtime={smtime}
+				bind:emtime={emtime}
+				bind:sctime={sctime}
+				bind:ectime={ectime}
 				updated={onSearchChange}/>
 			{#if Platform.isMobile}
 			<Order

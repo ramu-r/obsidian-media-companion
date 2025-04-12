@@ -39,9 +39,8 @@ export default class MediaCompanion extends Plugin {
 			this.app.metadataTypeManager.properties[MediaFile.last_updated_tag.toLowerCase()].type = "datetime";
 		});
 
-		this.addRibbonIcon('image', 'Open gallery', (_: MouseEvent) => {
-			this.createGallery();
-		});
+		this.addRibbonIcon('image', 'Open gallery', (_: MouseEvent) => this.createGallery());
+		this.registerCommands();
 
 		this.addSettingTab(new MediaCompanionSettingTab(this.app, this));
 	}
@@ -77,6 +76,14 @@ export default class MediaCompanion extends Plugin {
 	registerViews() {
 		this.registerView(VIEW_TYPE_GALLERY, (leaf) => new GalleryView(leaf, this));
 		this.registerView(VIEW_TYPE_SIDECAR, (leaf) => new SidecarView(leaf));
+	}
+
+	registerCommands() {
+		this.addCommand({
+			id: "open-gallery",
+			name: "Open gallery",
+			callback: () => this.createGallery()
+		});
 	}
 
 	async createSidecar(focus = true) {

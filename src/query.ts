@@ -41,6 +41,12 @@ export type QueryDetails = {
 		minHeight: number | null, 
 		maxHeight: number | null,
 	},
+	date: {
+		startCtime: Date | null,
+		endCtime: Date | null,
+		startMtime: Date | null,
+		endMtime: Date | null
+	}
 	orderBy: OrderByOptions,
 	orderIncreasing: boolean,
 }
@@ -75,6 +81,12 @@ export default class Query {
 			maxWidth: null,
 			minHeight: null,
 			maxHeight: null, 
+		},
+		date: {
+			startCtime: null,
+			endCtime: null,
+			startMtime: null,
+			endMtime: null
 		},
 		orderBy: OrderByOptions.name,
 		orderIncreasing: true,
@@ -151,6 +163,18 @@ export default class Query {
 
 		if (this.query.fileTypes.included.length > 0 && !this.query.fileTypes.included.contains(item.file.extension)) return false;
 		if (this.query.fileTypes.excluded.contains(item.file.extension)) return false;
+
+		const DAY_LENGTH = 86400000; // 1000* 60 * 60 * 24
+
+		if (this.query.date.startCtime && this.query.date.endCtime && 
+			this.query.date.startCtime.getTime() < this.query.date.endCtime.getTime() + DAY_LENGTH &&
+			(item.file.stat.ctime < this.query.date.startCtime.getTime() ||
+			item.file.stat.ctime > (this.query.date.endCtime.getTime()) + DAY_LENGTH)) return false;
+
+		if (this.query.date.startMtime && this.query.date.endMtime &&
+			this.query.date.startMtime.getTime() < this.query.date.endMtime.getTime() + DAY_LENGTH &&
+			(item.file.stat.mtime < (this.query.date.startMtime.getTime()) || 
+			item.file.stat.mtime > (this.query.date.endMtime.getTime()) + DAY_LENGTH)) return false;
 
 		if (mediaTypes.contains(MediaTypes.Image))
 		{
