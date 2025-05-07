@@ -104,13 +104,13 @@ export default class MutationHandler extends EventTarget {
 
 		// If someone moved a sidecar file
 		// Make a new one :(
-		const isSidecar = this.cache.isSidecar(file);
+		const isSidecar = this.cache.isSidecarFromPath(oldpath);
         
 		if (isSidecar) {
-			const mediaPath = file.path.substring(0, file.path.length - 11);
+			const mediaPath = oldpath.substring(0, oldpath.length - Sidecar.EXTENSION.length);
 			const mediaFile = this.app.vault.getFileByPath(mediaPath);
             
-			if (mediaFile) { 
+			if (mediaFile) {
 				this.onFileCreated(mediaFile);
 			}
 		}

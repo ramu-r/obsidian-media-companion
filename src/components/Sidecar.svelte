@@ -39,7 +39,7 @@
 	}, 1000, true);
     let fileEditDebounce = debounce(() => {
 		saveFile();
-	});
+	}, 200, true);
 
     let fileContent: string = "";
     let fileContentLastEdited: number = 0;
@@ -66,8 +66,15 @@
                 app.vault.read(e.detail.sidecar.file).then((content) => {
                     if (editorView) {
                         if (content === editorView.data) return;
+						// Briefly pause the editorObserver as we change the edit view
+						// This prevents the editorObserver from calling save when the view is emptied
+						// Necessary to prevent data loss.
+						editorObserver.disconnect();
                         editorView.set(content, true);
+						editorObserver.observe(editorContainer, { childList: true, subtree: true, characterData: true });
+
                         fileContent = content;
+						fileEditDebounce.cancel();
                     }
                 });
             }

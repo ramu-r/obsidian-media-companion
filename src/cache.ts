@@ -314,16 +314,18 @@ export default class Cache {
      * @returns Whether or not it is a sidecar file managed by the plugin
      */
 	public isSidecar(file: TFile): boolean {
-		if (file.extension !== "md") return false;
+		return this.isSidecarFromPath(file.path);
+	}
 
+	public isSidecarFromPath(path: string): boolean {
 		// Check if the path ends with the sidecar extension
-		if (!file.path.endsWith(Sidecar.EXTENSION)) return false;
+		if (!path.endsWith(Sidecar.EXTENSION)) return false;
 
 		// Else, get the media file and check if it exists
-		const mediaPath = file.path.substring(0, file.path.length - 11);        
+		const mediaPath = path.substring(0, path.length - Sidecar.EXTENSION.length);
 		const mediaFile = this.getFile(mediaPath);
-
-		return mediaFile !== undefined;
+		
+		return mediaFile !== undefined;		
 	}
 
 	/**
