@@ -18,14 +18,14 @@ export default class Sidecar {
 	private constructor() { }
 
 	/**
-     * Create a new sidecar file and link it to a media file
-     * @param file The media file to link it to
-     * @param app The app instance
-     * @returns The created sidecar
-     */
+	 * Create a new sidecar file and link it to a media file
+	 * @param file The media file to link it to
+	 * @param app The app instance
+	 * @returns The created sidecar
+	 */
 	public static async create(mediaFile: TFile, app: App, plugin: MediaCompanion, f: TFile | null = null): Promise<Sidecar> {
 		const file = new Sidecar();
-        
+
 		file.mediaFile = mediaFile;
 		file.app = app;
 		file.plugin = plugin;
@@ -36,10 +36,10 @@ export default class Sidecar {
 	}
 
 	/**
-     * Fill the sidecar with its metadata
-     * @param file The media file to use for filling
-     * @param app The app instance
-     */
+	 * Fill the sidecar with its metadata
+	 * @param file The media file to use for filling
+	 * @param app The app instance
+	 */
 	protected async fill(f: TFile | null = null): Promise<void> {
 		if (f) {
 			this.file = f;
@@ -53,11 +53,15 @@ export default class Sidecar {
      * Create a sidecar file if it does not exist yet
      * @param app The app instance
      * @returns The already existing or newly created sidecar file
-     */
-	private async createIfNotExists(): Promise<TFile> {
-		const file = this.app.vault.getFileByPath(`${this.mediaFile.path}${Sidecar.EXTENSION}`) ?? 
-            await this.app.vault.create(`${this.mediaFile.path}${Sidecar.EXTENSION}`, this.plugin.settings.sidecarTemplate);
-        
+     */private async createIfNotExists(): Promise<TFile> {
+		const template = this.plugin.settings.sidecarTemplate;
+		const mediaFilePath = this.mediaFile.path;
+		const fileName = this.mediaFile.basename;
+		const replacedTemplate = template.replace("{{path}}", mediaFilePath).replace("{{name}}", fileName);
+
+		const file = this.app.vault.getFileByPath(`${this.mediaFile.path}${Sidecar.EXTENSION}`) ??
+			await this.app.vault.create(`${this.mediaFile.path}${Sidecar.EXTENSION}`, replacedTemplate);
+
 		return file;
 	}
 
@@ -83,13 +87,13 @@ export default class Sidecar {
 	}
 
 	/**
-     * Finds all tags in the file: Both the frontmatter and the body, and returns
-     * them without duplicates and hashtags.
-     * @returns The tags, without hashtags and duplicates
-     */
+	 * Finds all tags in the file: Both the frontmatter and the body, and returns
+	 * them without duplicates and hashtags.
+	 * @returns The tags, without hashtags and duplicates
+	 */
 	public getTags(): string[] {
 		const cache = this.app.metadataCache.getFileCache(this.file);
-        
+
 		if (!cache) return [];
 
 		let tags = cache.tags?.map(t => t.tag) ?? [];
@@ -112,28 +116,28 @@ export default class Sidecar {
 	}
 
 	/**
-     * Gets the information from a tag in the frontmatter
-     * @param tag The tag to get from the frontmatter
-     * @returns The data in the tag, or undefined if it does not exist
-     */
+	 * Gets the information from a tag in the frontmatter
+	 * @param tag The tag to get from the frontmatter
+	 * @returns The data in the tag, or undefined if it does not exist
+	 */
 	public getFrontmatterTag(tag: string): unknown | undefined {
 		const cache = this.app.metadataCache.getFileCache(this.file)?.frontmatter;
 		if (!cache) return undefined;
-        
+
 		return cache[tag];
 	}
 
 	/** 
-     * Sets the information in a tag in the frontmatter
-     * @param tag The tag to set in the frontmatter
-     * @param value The value to set
-     * @param type The type of the frontmatter tag
-     */
-	public async setFrontmatterTag(tag: string, value: unknown, 
+	 * Sets the information in a tag in the frontmatter
+	 * @param tag The tag to set in the frontmatter
+	 * @param value The value to set
+	 * @param type The type of the frontmatter tag
+	 */
+	public async setFrontmatterTag(tag: string, value: unknown,
 		type: "text" | "multitext" | "number" | "checkbox" | "date" | "datetime" | "aliases" | "tags" | undefined = undefined): Promise<void> {
 		try {
 			await this.app.fileManager.processFrontMatter(this.file, (fm) => fm[tag] = value);
-            
+
 			if (type) {
 				// @ts-ignore
 				this.app.metadataTypeManager.properties[tag.toLowerCase()].type = type;
